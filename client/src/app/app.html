@@ -1,19 +1,33 @@
 <nav class="navbar navbar-expand bg-body-tertiary border-bottom">
   <div class="container-fluid">
-    <a class="navbar-brand" routerLink="/">OpenCampus</a>
-    <ul class="navbar-nav">
-      <li class="nav-item"><a class="nav-link" routerLink="/admin">Admin</a></li>
-      <li class="nav-item"><a class="nav-link" routerLink="/instructor">Instructor</a></li>
-      <li class="nav-item"><a class="nav-link" routerLink="/learner">Learner</a></li>
-    </ul>
-    <span class="navbar-text" data-testid="api-status">
-      API:
-      @switch (apiStatus()) {
-        @case ('healthy') { <span class="badge text-bg-success">Healthy</span> }
-        @case ('unreachable') { <span class="badge text-bg-danger">Unreachable</span> }
-        @default { <span class="badge text-bg-secondary">Checking</span> }
+    <a class="navbar-brand" routerLink="/">{{ 'app.title' | t }}</a>
+    <!-- 17.3: only functions available to the user are presented. -->
+    <ul class="navbar-nav me-auto">
+      @if (session.hasAnyRole([roles.Administrator, roles.Registrar])) {
+        <li class="nav-item"><a class="nav-link" routerLink="/admin" data-testid="nav-admin">{{ 'nav.admin' | t }}</a></li>
       }
-    </span>
+      @if (session.hasRole(roles.Instructor)) {
+        <li class="nav-item"><a class="nav-link" routerLink="/instructor" data-testid="nav-instructor">{{ 'nav.instructor' | t }}</a></li>
+      }
+      @if (session.hasRole(roles.Learner)) {
+        <li class="nav-item"><a class="nav-link" routerLink="/learner" data-testid="nav-learner">{{ 'nav.learner' | t }}</a></li>
+      }
+    </ul>
+    <div class="d-flex align-items-center gap-3">
+      <button class="btn btn-link btn-sm p-0" type="button" (click)="i18n.toggle()" data-testid="language-toggle">{{ 'app.language' | t }}</button>
+      <span class="navbar-text" data-testid="api-status">
+        {{ 'app.api' | t }}:
+        @switch (apiStatus()) {
+          @case ('healthy') { <span class="badge text-bg-success">{{ 'app.api.healthy' | t }}</span> }
+          @case ('unreachable') { <span class="badge text-bg-danger">{{ 'app.api.unreachable' | t }}</span> }
+          @default { <span class="badge text-bg-secondary">{{ 'app.api.checking' | t }}</span> }
+        }
+      </span>
+      @if (session.principal(); as user) {
+        <span class="navbar-text" data-testid="current-user">{{ i18n.language() === 'ar' ? user.fullNameAr : user.fullNameEn }}</span>
+        <button class="btn btn-outline-secondary btn-sm" type="button" (click)="logout()" data-testid="logout">{{ 'nav.logout' | t }}</button>
+      }
+    </div>
   </div>
 </nav>
 <main class="container py-4">

@@ -1,11 +1,18 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { SessionService } from '../../core/auth/session.service';
+import { TranslatePipe } from '../../core/i18n/i18n.service';
 
 @Component({
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, TranslatePipe],
   template: `
-    <h1 class="h4">Instructor</h1>
+    <h1 class="h4">{{ 'shell.instructor' | t }}</h1>
+    @if (session.principal(); as user) {
+      <p class="text-secondary" data-testid="shell-user">{{ 'shell.welcome' | t }} {{ user.userName }}</p>
+    }
     <router-outlet />
   `,
 })
-export class InstructorLayout {}
+export class InstructorLayout {
+  protected readonly session = inject(SessionService);
+}
