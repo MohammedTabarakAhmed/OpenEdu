@@ -20,7 +20,19 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     {
         builder.UseEnvironment("Test");
         builder.UseSetting("ConnectionStrings:OpenCampus", ConnectionString);
+
+        // Test-only tuning: the shared host must not rate-limit the suite (a dedicated host covers SEC-16),
+        // and the PBKDF2 floor keeps credential-heavy tests fast while remaining a valid configuration.
+        builder.UseSetting("AccountProtection:RateLimitPermittedRequests", "1000");
+        builder.UseSetting("PasswordHashing:Iterations", "100000");
     }
+
+    /// <summary>A client on an HTTPS origin (so Secure cookies are honoured) that leaves cookie handling to the test.</summary>
+    public HttpClient CreateApiClient() => CreateClient(new WebApplicationFactoryClientOptions
+    {
+        BaseAddress = new Uri("https://localhost"),
+        HandleCookies = false,
+    });
 
     public async Task InitializeAsync()
     {
@@ -30,6 +42,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         await identity.Database.MigrateAsync();
         await scope.ServiceProvider.GetRequiredService<SisDbContext>().Database.MigrateAsync();
         await scope.ServiceProvider.GetRequiredService<LmsDbContext>().Database.MigrateAsync();
+
+        await OpenCampus.Api.Persistence.DatabaseInitializer.ProvisionAsync(Services, Server.Services.GetRequiredService<IWebHostEnvironment>().ContentRootPath);
     }
 
     async Task IAsyncLifetime.DisposeAsync()
