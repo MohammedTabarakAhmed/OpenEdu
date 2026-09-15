@@ -1,0 +1,27 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.swp
+TestResults/
+*.trx
+
+## Node / Angular
+node_modules/
+client/dist/
+client/.angular/
+client/coverage/
+npm-debug.log*
+
+## Runtime data directories (§9.2 — outside source control, not served statically)
+data/
+logs/
+keys/
+
+## Secrets (§9.2, AC-27)
+appsettings.*.local.json
+*.pfx
+*.pem
+.env

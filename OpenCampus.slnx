@@ -1,0 +1,28 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Api/">
+    <Project Path="src/Api/OpenCampus.Api/OpenCampus.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Identity/">
+    <Project Path="src/Identity/OpenCampus.Identity.Application/OpenCampus.Identity.Application.csproj" />
+    <Project Path="src/Identity/OpenCampus.Identity.Domain/OpenCampus.Identity.Domain.csproj" />
+    <Project Path="src/Identity/OpenCampus.Identity.Infrastructure/OpenCampus.Identity.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Lms/">
+    <Project Path="src/Lms/OpenCampus.Lms.Application/OpenCampus.Lms.Application.csproj" />
+    <Project Path="src/Lms/OpenCampus.Lms.Domain/OpenCampus.Lms.Domain.csproj" />
+    <Project Path="src/Lms/OpenCampus.Lms.Infrastructure/OpenCampus.Lms.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/SharedKernel/">
+    <Project Path="src/SharedKernel/OpenCampus.SharedKernel/OpenCampus.SharedKernel.csproj" />
+  </Folder>
+  <Folder Name="/src/Sis/">
+    <Project Path="src/Sis/OpenCampus.Sis.Application/OpenCampus.Sis.Application.csproj" />
+    <Project Path="src/Sis/OpenCampus.Sis.Domain/OpenCampus.Sis.Domain.csproj" />
+    <Project Path="src/Sis/OpenCampus.Sis.Infrastructure/OpenCampus.Sis.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/OpenCampus.IntegrationTests/OpenCampus.IntegrationTests.csproj" />
+    <Project Path="tests/OpenCampus.UnitTests/OpenCampus.UnitTests.csproj" />
+  </Folder>
+</Solution>
