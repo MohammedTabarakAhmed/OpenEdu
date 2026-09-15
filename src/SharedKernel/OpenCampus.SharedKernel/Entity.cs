@@ -4,7 +4,7 @@ public abstract class Entity
 {
     protected Entity()
     {
-        Id = Guid.CreateVersion7();
+        Id = SequentialGuid.NewGuid();
     }
 
     public Guid Id { get; private set; }

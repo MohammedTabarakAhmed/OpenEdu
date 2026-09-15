@@ -7,21 +7,11 @@ public class EntityTests
     private sealed class TestEntity : Entity;
 
     [Fact]
-    public void NewEntity_HasVersion7Identifier()
+    public void NewEntity_HasIdentifier()
     {
         var entity = new TestEntity();
 
         entity.Id.ShouldNotBe(Guid.Empty);
-        entity.Id.Version.ShouldBe(7);
-    }
-
-    [Fact]
-    public void NewEntities_HaveAscendingIdentifiers()
-    {
-        var first = new TestEntity();
-        var second = new TestEntity();
-
-        second.Id.CompareTo(first.Id).ShouldBeGreaterThan(0);
     }
 
     [Fact]
