@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\OpenCampus.Lms.Application\OpenCampus.Lms.Application.csproj" />
   </ItemGroup>
 

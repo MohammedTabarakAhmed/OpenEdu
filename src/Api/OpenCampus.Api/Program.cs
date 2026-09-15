@@ -1,14 +1,28 @@
+using OpenCampus.Api.Persistence;
+using OpenCampus.Identity.Infrastructure;
+using OpenCampus.Lms.Infrastructure;
+using OpenCampus.Sis.Infrastructure;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+var connectionString = builder.Configuration.GetConnectionString("OpenCampus")
+    ?? throw new InvalidOperationException("Connection string 'OpenCampus' is not configured.");
+
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddIdentityInfrastructure(connectionString);
+builder.Services.AddSisInfrastructure(connectionString);
+builder.Services.AddLmsInfrastructure(connectionString);
 
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Demonstration"))
+{
+    await DatabaseInitializer.MigrateAsync(app.Services);
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
