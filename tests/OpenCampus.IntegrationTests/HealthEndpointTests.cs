@@ -3,7 +3,8 @@ using OpenCampus.Api.Middleware;
 
 namespace OpenCampus.IntegrationTests;
 
-public class HealthEndpointTests(ApiFactory factory) : IClassFixture<ApiFactory>
+[Collection(ApiCollection.Name)]
+public class HealthEndpointTests(ApiFactory factory)
 {
     [Fact]
     public async Task Health_ReturnsHealthy()
