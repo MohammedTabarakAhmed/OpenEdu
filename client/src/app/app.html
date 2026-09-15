@@ -1,0 +1,21 @@
+<nav class="navbar navbar-expand bg-body-tertiary border-bottom">
+  <div class="container-fluid">
+    <a class="navbar-brand" routerLink="/">OpenCampus</a>
+    <ul class="navbar-nav">
+      <li class="nav-item"><a class="nav-link" routerLink="/admin">Admin</a></li>
+      <li class="nav-item"><a class="nav-link" routerLink="/instructor">Instructor</a></li>
+      <li class="nav-item"><a class="nav-link" routerLink="/learner">Learner</a></li>
+    </ul>
+    <span class="navbar-text" data-testid="api-status">
+      API:
+      @switch (apiStatus()) {
+        @case ('healthy') { <span class="badge text-bg-success">Healthy</span> }
+        @case ('unreachable') { <span class="badge text-bg-danger">Unreachable</span> }
+        @default { <span class="badge text-bg-secondary">Checking</span> }
+      }
+    </span>
+  </div>
+</nav>
+<main class="container py-4">
+  <router-outlet />
+</main>
