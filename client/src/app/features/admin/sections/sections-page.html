@@ -1,0 +1,115 @@
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h2 class="h5 m-0">{{ 'sections.title' | t }}</h2>
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+    <label class="visually-hidden" for="section-status-filter">{{ 'common.status' | t }}</label>
+    <select class="form-select form-select-sm w-auto" id="section-status-filter" (change)="onStatusFilter($any($event.target).value)" data-testid="section-status-filter">
+      <option value="">{{ 'sections.allStatuses' | t }}</option>
+      @for (status of statuses; track status) {
+        <option [value]="status">{{ 'sections.status.' + status | t }}</option>
+      }
+    </select>
+    <app-search-box id="section-search" (search)="onSearch($event)" />
+    @if (session.hasPermission('sis.section.write')) {
+      <button class="btn btn-primary btn-sm" type="button" (click)="startCreate()" data-testid="section-new">{{ 'sections.new' | t }}</button>
+    }
+  </div>
+</div>
+
+@if (showForm()) {
+  <form class="card card-body mb-3" [formGroup]="form" (ngSubmit)="submit()" novalidate data-testid="section-form">
+    <h3 class="h6">{{ 'sections.new' | t }}</h3>
+    <app-submit-error [error]="error()" />
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label" for="section-course">{{ 'courses.title' | t }}</label>
+        <select class="form-select" id="section-course" formControlName="courseId" [class.is-invalid]="errors('courseId').length">
+          <option value="" disabled>{{ 'common.select' | t }}</option>
+          @for (course of courses(); track course.id) {
+            <option [value]="course.id">{{ course.code }} — {{ course | bilingual: 'name' }}</option>
+          }
+        </select>
+        <app-field-errors [messages]="errors('courseId')" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="section-code">{{ 'sections.code' | t }}</label>
+        <input class="form-control" id="section-code" formControlName="code" [class.is-invalid]="errors('code').length || (form.controls.code.touched && form.controls.code.invalid)" />
+        <app-field-errors [messages]="errors('code')" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="section-term">{{ 'sections.term' | t }}</label>
+        <input class="form-control" id="section-term" formControlName="termName" [class.is-invalid]="errors('termName').length || (form.controls.termName.touched && form.controls.termName.invalid)" />
+        <app-field-errors [messages]="errors('termName')" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="section-start">{{ 'sections.startDate' | t }}</label>
+        <input class="form-control" id="section-start" type="date" formControlName="startDate" [class.is-invalid]="errors('startDate').length" />
+        <app-field-errors [messages]="errors('startDate')" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="section-end">{{ 'sections.endDate' | t }}</label>
+        <input class="form-control" id="section-end" type="date" formControlName="endDate" [class.is-invalid]="errors('endDate').length" />
+        <app-field-errors [messages]="errors('endDate')" />
+      </div>
+      <div class="col-md-2">
+        <label class="form-label" for="section-capacity">{{ 'sections.capacity' | t }}</label>
+        <input class="form-control" id="section-capacity" type="number" min="1" max="1000" formControlName="capacity" [class.is-invalid]="errors('capacity').length" />
+        <app-field-errors [messages]="errors('capacity')" />
+      </div>
+      <div class="col-md-2">
+        <label class="form-label" for="section-mode">{{ 'sections.deliveryMode' | t }}</label>
+        <select class="form-select" id="section-mode" formControlName="deliveryMode">
+          @for (mode of deliveryModes; track mode) {
+            <option [value]="mode">{{ 'sections.mode.' + mode | t }}</option>
+          }
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="section-instructor">{{ 'sections.instructor' | t }}</label>
+        <select class="form-select" id="section-instructor" formControlName="instructorUserId" [class.is-invalid]="errors('instructorUserId').length">
+          <option value="" disabled>{{ 'common.select' | t }}</option>
+          @for (instructor of instructors(); track instructor.userId) {
+            <option [value]="instructor.userId">{{ instructor | bilingual: 'fullName' }} ({{ instructor.userName }})</option>
+          }
+        </select>
+        <app-field-errors [messages]="errors('instructorUserId')" />
+      </div>
+    </div>
+    <div class="d-flex gap-2 mt-3">
+      <button class="btn btn-primary btn-sm" type="submit" [disabled]="busy()" data-testid="section-save">{{ 'common.save' | t }}</button>
+      <button class="btn btn-outline-secondary btn-sm" type="button" (click)="cancel()" [disabled]="busy()">{{ 'common.cancel' | t }}</button>
+    </div>
+  </form>
+}
+
+<app-page-controls [state]="state" />
+
+@if (state.items().length > 0) {
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle" data-testid="section-table">
+      <thead>
+        <tr>
+          <th scope="col">{{ 'sections.code' | t }}</th>
+          <th scope="col">{{ 'courses.title' | t }}</th>
+          <th scope="col">{{ 'sections.term' | t }}</th>
+          <th scope="col">{{ 'sections.dates' | t }}</th>
+          <th scope="col">{{ 'sections.instructor' | t }}</th>
+          <th scope="col">{{ 'sections.enrolled' | t }}</th>
+          <th scope="col">{{ 'common.status' | t }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (section of state.items(); track section.id) {
+          <tr>
+            <td><a [routerLink]="['/admin/sections', section.id]"><code>{{ section.code }}</code></a></td>
+            <td>{{ section.courseCode }} — {{ section | bilingual: 'courseName' }}</td>
+            <td>{{ section.termName }}</td>
+            <td>{{ section.startDate | localeDate }} – {{ section.endDate | localeDate }}</td>
+            <td>{{ section.instructor ? (section.instructor | bilingual: 'fullName') : '—' }}</td>
+            <td>{{ section.activeEnrolmentCount }} / {{ section.capacity }}</td>
+            <td><span class="badge" [class]="'badge text-bg-' + (section.status === 'Open' ? 'success' : section.status === 'Draft' ? 'secondary' : 'dark')">{{ 'sections.status.' + section.status | t }}</span></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

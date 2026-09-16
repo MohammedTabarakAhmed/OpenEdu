@@ -1,0 +1,95 @@
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h2 class="h5 m-0">{{ 'learners.title' | t }}</h2>
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+    <label class="visually-hidden" for="learner-status-filter">{{ 'common.status' | t }}</label>
+    <select class="form-select form-select-sm w-auto" id="learner-status-filter" (change)="onStatusFilter($any($event.target).value)">
+      <option value="">{{ 'learners.allStatuses' | t }}</option>
+      @for (status of statuses; track status) {
+        <option [value]="status">{{ 'learners.status.' + status | t }}</option>
+      }
+    </select>
+    <app-search-box id="learner-search" (search)="onSearch($event)" />
+    @if (session.hasPermission('sis.learner.write')) {
+      <button class="btn btn-primary btn-sm" type="button" (click)="startCreate()" data-testid="learner-new">{{ 'learners.new' | t }}</button>
+    }
+  </div>
+</div>
+
+@if (showForm()) {
+  <form class="card card-body mb-3" [formGroup]="form" (ngSubmit)="submit()" novalidate data-testid="learner-form">
+    <h3 class="h6">{{ 'learners.new' | t }}</h3>
+    <p class="small text-secondary">{{ 'learners.newHint' | t }}</p>
+    <app-submit-error [error]="error()" />
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label" for="learner-user">{{ 'learners.account' | t }}</label>
+        <select class="form-select" id="learner-user" formControlName="userId" [class.is-invalid]="errors('userId').length">
+          <option value="" disabled>{{ 'common.select' | t }}</option>
+          @for (user of candidates(); track user.userId) {
+            <option [value]="user.userId">{{ user.userName }} — {{ user | bilingual: 'fullName' }}</option>
+          }
+        </select>
+        <app-field-errors [messages]="errors('userId')" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="learner-number">{{ 'learners.number' | t }}</label>
+        <input class="form-control" id="learner-number" formControlName="learnerNumber" [class.is-invalid]="errors('learnerNumber').length || (form.controls.learnerNumber.touched && form.controls.learnerNumber.invalid)" />
+        <app-field-errors [messages]="errors('learnerNumber')" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="learner-gender">{{ 'learners.gender' | t }}</label>
+        <select class="form-select" id="learner-gender" formControlName="gender">
+          @for (gender of genders; track gender) {
+            <option [value]="gender">{{ 'learners.gender.' + gender | t }}</option>
+          }
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="learner-dob">{{ 'learners.dateOfBirth' | t }}</label>
+        <input class="form-control" id="learner-dob" type="date" formControlName="dateOfBirth" [class.is-invalid]="errors('dateOfBirth').length" />
+        <app-field-errors [messages]="errors('dateOfBirth')" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="learner-nationalId">{{ 'learners.nationalId' | t }}</label>
+        <input class="form-control" id="learner-nationalId" formControlName="nationalId" autocomplete="off" />
+        <app-field-errors [messages]="errors('nationalId')" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="learner-phone">{{ 'learners.phone' | t }}</label>
+        <input class="form-control" id="learner-phone" type="tel" formControlName="phone" dir="ltr" />
+        <app-field-errors [messages]="errors('phone')" />
+      </div>
+    </div>
+    <div class="d-flex gap-2 mt-3">
+      <button class="btn btn-primary btn-sm" type="submit" [disabled]="busy()" data-testid="learner-save">{{ 'common.save' | t }}</button>
+      <button class="btn btn-outline-secondary btn-sm" type="button" (click)="cancel()" [disabled]="busy()">{{ 'common.cancel' | t }}</button>
+    </div>
+  </form>
+}
+
+<app-page-controls [state]="state" />
+
+@if (state.items().length > 0) {
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle" data-testid="learner-table">
+      <thead>
+        <tr>
+          <th scope="col">{{ 'learners.number' | t }}</th>
+          <th scope="col">{{ 'common.name' | t }}</th>
+          <th scope="col">{{ 'users.userName' | t }}</th>
+          <th scope="col">{{ 'common.status' | t }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (learner of state.items(); track learner.id) {
+          <tr>
+            <td><a [routerLink]="['/admin/learners', learner.id]">{{ learner.learnerNumber }}</a></td>
+            <td>{{ learner.user ? (learner.user | bilingual: 'fullName') : '—' }}</td>
+            <td>{{ learner.user?.userName ?? '—' }}</td>
+            <td><span class="badge" [class]="'badge text-bg-' + (learner.status === 'Active' ? 'success' : 'secondary')">{{ 'learners.status.' + learner.status | t }}</span></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

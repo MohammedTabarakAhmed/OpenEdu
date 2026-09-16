@@ -1,0 +1,265 @@
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a routerLink="/admin/sections">{{ 'sections.title' | t }}</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ detail()?.section?.code ?? '…' }}</li>
+  </ol>
+</nav>
+
+@if (loadError(); as failure) {
+  <div class="alert alert-danger" role="alert" data-testid="state-error">{{ 'common.loadFailed' | t }} {{ failure.message }}</div>
+} @else if (detail(); as d) {
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div>
+      <h2 class="h5 m-0" data-testid="section-heading">{{ d.section.code }} — {{ d.section | bilingual: 'courseName' }}</h2>
+      <p class="text-secondary m-0">
+        {{ d.section.termName }} · {{ d.section.startDate | localeDate }} – {{ d.section.endDate | localeDate }} ·
+        {{ 'sections.mode.' + d.section.deliveryMode | t }} ·
+        {{ 'sections.enrolled' | t }} {{ d.section.activeEnrolmentCount }} / {{ d.section.capacity }}
+      </p>
+    </div>
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <span class="badge" [class]="'badge text-bg-' + (d.section.status === 'Open' ? 'success' : d.section.status === 'Draft' ? 'secondary' : 'dark')" data-testid="section-status">
+        {{ 'sections.status.' + d.section.status | t }}
+      </span>
+      @if (canTransition()) {
+        @if (d.section.status === 'Draft') {
+          <button class="btn btn-success btn-sm" type="button" (click)="transition('open')" [disabled]="busy()" data-testid="section-open">{{ 'sections.open' | t }}</button>
+        }
+        @if (d.section.status === 'Open') {
+          <button class="btn btn-outline-dark btn-sm" type="button" (click)="transition('close')" [disabled]="busy()" data-testid="section-close">{{ 'sections.close' | t }}</button>
+        }
+        @if (d.section.status === 'Draft' || d.section.status === 'Open') {
+          <button class="btn btn-outline-warning btn-sm" type="button" (click)="transition('cancel')" [disabled]="busy()">{{ 'sections.cancel' | t }}</button>
+        }
+      }
+      @if (canWrite()) {
+        <button class="btn btn-outline-danger btn-sm" type="button" (click)="remove()" [disabled]="busy()" data-testid="section-delete">{{ 'common.delete' | t }}</button>
+      }
+    </div>
+  </div>
+
+  <ul class="nav nav-tabs mb-3" role="tablist">
+    @for (item of ['details', 'sessions', 'scheme', 'enrolments']; track item) {
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" type="button" role="tab" [class.active]="tab() === item" [attr.aria-selected]="tab() === item" (click)="select($any(item))" [attr.data-testid]="'tab-' + item">
+          {{ 'sections.tab.' + item | t }}
+        </button>
+      </li>
+    }
+  </ul>
+
+  <app-submit-error [error]="error()" />
+
+  @switch (tab()) {
+    @case ('details') {
+      <form [formGroup]="form" (ngSubmit)="save()" novalidate data-testid="section-details-form">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label" for="detail-term">{{ 'sections.term' | t }}</label>
+            <input class="form-control" id="detail-term" formControlName="termName" [class.is-invalid]="errors('termName').length" />
+            <app-field-errors [messages]="errors('termName')" />
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" for="detail-start">{{ 'sections.startDate' | t }}</label>
+            <input class="form-control" id="detail-start" type="date" formControlName="startDate" [class.is-invalid]="errors('startDate').length" />
+            <app-field-errors [messages]="errors('startDate')" />
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" for="detail-end">{{ 'sections.endDate' | t }}</label>
+            <input class="form-control" id="detail-end" type="date" formControlName="endDate" [class.is-invalid]="errors('endDate').length" />
+            <app-field-errors [messages]="errors('endDate')" />
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" for="detail-capacity">{{ 'sections.capacity' | t }}</label>
+            <input class="form-control" id="detail-capacity" type="number" min="1" max="1000" formControlName="capacity" [class.is-invalid]="errors('capacity').length" />
+            <app-field-errors [messages]="errors('capacity')" />
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" for="detail-mode">{{ 'sections.deliveryMode' | t }}</label>
+            <select class="form-select" id="detail-mode" formControlName="deliveryMode">
+              @for (mode of deliveryModes; track mode) {
+                <option [value]="mode">{{ 'sections.mode.' + mode | t }}</option>
+              }
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="detail-instructor">{{ 'sections.instructor' | t }}</label>
+            @if (canWrite()) {
+              <select class="form-select" id="detail-instructor" formControlName="instructorUserId" [class.is-invalid]="errors('instructorUserId').length">
+                @for (instructor of instructors(); track instructor.userId) {
+                  <option [value]="instructor.userId">{{ instructor | bilingual: 'fullName' }} ({{ instructor.userName }})</option>
+                }
+              </select>
+              <app-field-errors [messages]="errors('instructorUserId')" />
+            } @else {
+              <input class="form-control" id="detail-instructor" readonly [value]="d.section.instructor ? (d.section.instructor | bilingual: 'fullName') : '—'" />
+            }
+          </div>
+        </div>
+        @if (canWrite() && isAmendable()) {
+          <button class="btn btn-primary btn-sm mt-3" type="submit" [disabled]="busy()" data-testid="section-save">{{ 'common.save' | t }}</button>
+        }
+      </form>
+    }
+
+    @case ('sessions') {
+      @if (canWrite() && isAmendable()) {
+        <form class="card card-body mb-3" [formGroup]="sessionForm" (ngSubmit)="addSession()" novalidate data-testid="session-form">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+              <label class="form-label" for="session-date">{{ 'sessions.date' | t }}</label>
+              <input class="form-control" id="session-date" type="date" formControlName="date" />
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" for="session-start">{{ 'sessions.start' | t }}</label>
+              <input class="form-control" id="session-start" type="time" formControlName="startTime" />
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" for="session-end">{{ 'sessions.end' | t }}</label>
+              <input class="form-control" id="session-end" type="time" formControlName="endTime" />
+              <app-field-errors [messages]="errors('scheduledEndUtc')" />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="session-location">{{ 'sessions.location' | t }}</label>
+              <input class="form-control" id="session-location" formControlName="location" />
+            </div>
+            <div class="col-md-2">
+              <button class="btn btn-primary btn-sm w-100" type="submit" [disabled]="busy()" data-testid="session-add">{{ 'sessions.add' | t }}</button>
+            </div>
+          </div>
+        </form>
+      }
+      @if (d.sessions.length === 0) {
+        <p class="text-secondary" data-testid="state-empty">{{ 'common.empty' | t }}</p>
+      } @else {
+        <table class="table table-sm align-middle" data-testid="session-table">
+          <thead><tr><th scope="col">{{ 'sessions.start' | t }}</th><th scope="col">{{ 'sessions.end' | t }}</th><th scope="col">{{ 'sessions.location' | t }}</th><th scope="col"></th></tr></thead>
+          <tbody>
+            @for (s of d.sessions; track s.id) {
+              <tr>
+                <td>{{ s.scheduledStartUtc | localeDate: 'datetime' }}</td>
+                <td>{{ s.scheduledEndUtc | localeDate: 'datetime' }}</td>
+                <td>{{ s.location ?? '—' }}</td>
+                <td class="text-end">
+                  @if (canWrite() && isAmendable()) {
+                    <button class="btn btn-link btn-sm text-danger" type="button" (click)="removeSession(s.id)">{{ 'common.remove' | t }}</button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    }
+
+    @case ('scheme') {
+      <p class="small text-secondary">{{ 'scheme.total' | t }}: <strong data-testid="scheme-total">{{ d.totalWeightPercent }}%</strong></p>
+      @if (canWrite() && isAmendable()) {
+        <form class="card card-body mb-3" [formGroup]="componentForm" (ngSubmit)="addComponent()" novalidate data-testid="component-form">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+              <label class="form-label" for="component-nameEn">{{ 'common.nameEn' | t }}</label>
+              <input class="form-control" id="component-nameEn" formControlName="nameEn" dir="ltr" />
+              <app-field-errors [messages]="errors('nameEn')" />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="component-nameAr">{{ 'common.nameAr' | t }}</label>
+              <input class="form-control" id="component-nameAr" formControlName="nameAr" dir="rtl" />
+              <app-field-errors [messages]="errors('nameAr')" />
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" for="component-weight">{{ 'scheme.weight' | t }}</label>
+              <input class="form-control" id="component-weight" type="number" step="0.01" min="0.01" max="100" formControlName="weightPercent" />
+              <app-field-errors [messages]="errors('weightPercent')" />
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" for="component-max">{{ 'scheme.maxScore' | t }}</label>
+              <input class="form-control" id="component-max" type="number" step="0.01" min="0.01" formControlName="maxScore" />
+              <app-field-errors [messages]="errors('maxScore')" />
+            </div>
+            <div class="col-md-2">
+              <button class="btn btn-primary btn-sm w-100" type="submit" [disabled]="busy()" data-testid="component-add">{{ 'scheme.add' | t }}</button>
+            </div>
+          </div>
+        </form>
+      }
+      @if (d.gradeComponents.length === 0) {
+        <p class="text-secondary" data-testid="state-empty">{{ 'common.empty' | t }}</p>
+      } @else {
+        <table class="table table-sm align-middle" data-testid="component-table">
+          <thead><tr><th scope="col">{{ 'common.name' | t }}</th><th scope="col">{{ 'scheme.weight' | t }}</th><th scope="col">{{ 'scheme.maxScore' | t }}</th><th scope="col"></th></tr></thead>
+          <tbody>
+            @for (c of d.gradeComponents; track c.id) {
+              <tr>
+                <td>{{ c | bilingual: 'name' }}</td>
+                <td>{{ c.weightPercent }}%</td>
+                <td>{{ c.maxScore }}</td>
+                <td class="text-end">
+                  @if (canWrite() && isAmendable()) {
+                    <button class="btn btn-link btn-sm text-danger" type="button" (click)="removeComponent(c.id)">{{ 'common.remove' | t }}</button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    }
+
+    @case ('enrolments') {
+      @if (canEnrol() && d.section.status === 'Open') {
+        <div class="card card-body mb-3" data-testid="enrol-panel">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-4">
+              <label class="form-label" for="enrol-search">{{ 'enrolments.findLearner' | t }}</label>
+              <input class="form-control" id="enrol-search" type="search" [value]="learnerSearch" (input)="searchLearners($any($event.target).value)" />
+            </div>
+            <div class="col-md-5">
+              <label class="form-label" for="enrol-learner">{{ 'learners.title' | t }}</label>
+              <select class="form-select" id="enrol-learner" [value]="selectedLearnerId" (change)="selectedLearnerId = $any($event.target).value" data-testid="enrol-learner">
+                <option value="">{{ 'common.select' | t }}</option>
+                @for (learner of learnerMatches(); track learner.id) {
+                  <option [value]="learner.id">{{ learner.learnerNumber }} — {{ learner.user ? (learner.user | bilingual: 'fullName') : '' }}</option>
+                }
+              </select>
+            </div>
+            <div class="col-md-3">
+              <button class="btn btn-primary btn-sm w-100" type="button" (click)="enrol()" [disabled]="busy() || !selectedLearnerId" data-testid="enrol-submit">{{ 'enrolments.enrol' | t }}</button>
+            </div>
+          </div>
+        </div>
+      }
+      <app-page-controls [state]="enrolments" />
+      @if (enrolments.items().length > 0) {
+        <table class="table table-sm align-middle" data-testid="enrolment-table">
+          <thead>
+            <tr>
+              <th scope="col">{{ 'learners.number' | t }}</th>
+              <th scope="col">{{ 'common.name' | t }}</th>
+              <th scope="col">{{ 'enrolments.enrolledAt' | t }}</th>
+              <th scope="col">{{ 'common.status' | t }}</th>
+              <th scope="col"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (e of enrolments.items(); track e.id) {
+              <tr>
+                <td><a [routerLink]="['/admin/learners', e.learner.learnerId]">{{ e.learner.learnerNumber }}</a></td>
+                <td>{{ e.learner | bilingual: 'fullName' }}</td>
+                <td>{{ e.enrolledAtUtc | localeDate: 'datetime' }}</td>
+                <td><span class="badge" [class]="'badge text-bg-' + (e.status === 'Active' ? 'success' : e.status === 'Withdrawn' ? 'secondary' : 'warning')">{{ 'enrolments.status.' + e.status | t }}</span></td>
+                <td class="text-end">
+                  @if (canEnrol() && (e.status === 'Active' || e.status === 'AtRisk')) {
+                    <button class="btn btn-link btn-sm text-danger" type="button" (click)="withdraw(e)">{{ 'enrolments.withdraw' | t }}</button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    }
+  }
+} @else {
+  <p class="text-secondary" role="status" data-testid="state-loading">{{ 'common.loading' | t }}</p>
+}

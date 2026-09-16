@@ -19,6 +19,7 @@ export const routes: Routes = [
     path: 'admin',
     canActivate: [roleGuard(Roles.Administrator, Roles.Registrar)],
     loadComponent: () => import('./layouts/admin/admin-layout').then((m) => m.AdminLayout),
+    loadChildren: () => import('./features/admin/admin.routes').then((m) => m.adminRoutes),
   },
   {
     path: 'instructor',
@@ -29,6 +30,7 @@ export const routes: Routes = [
     path: 'learner',
     canActivate: [roleGuard(Roles.Learner)],
     loadComponent: () => import('./layouts/learner/learner-layout').then((m) => m.LearnerLayout),
+    loadChildren: () => import('./features/learner/learner.routes').then((m) => m.learnerRoutes),
   },
   { path: '**', redirectTo: '' },
 ];

@@ -1,0 +1,145 @@
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h2 class="h5 m-0">{{ 'users.title' | t }}</h2>
+  <div class="d-flex gap-2">
+    <app-search-box id="user-search" (search)="onSearch($event)" />
+    @if (session.hasPermission('identity.user.write')) {
+      <button class="btn btn-primary btn-sm" type="button" (click)="startCreate()" data-testid="user-new">{{ 'users.new' | t }}</button>
+    }
+  </div>
+</div>
+
+@if (showForm()) {
+  <form class="card card-body mb-3" [formGroup]="form" (ngSubmit)="submit()" novalidate data-testid="user-form">
+    <h3 class="h6">{{ (editing() ? 'users.edit' : 'users.new') | t }}</h3>
+    <app-submit-error [error]="error()" />
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label" for="user-userName">{{ 'users.userName' | t }}</label>
+        <input class="form-control" id="user-userName" formControlName="userName" autocomplete="off" dir="ltr" [class.is-invalid]="errors('userName').length || (form.controls.userName.touched && form.controls.userName.invalid)" />
+        <app-field-errors [messages]="errors('userName')" />
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="user-email">{{ 'users.email' | t }}</label>
+        <input class="form-control" id="user-email" type="email" formControlName="email" autocomplete="off" dir="ltr" [class.is-invalid]="errors('email').length || (form.controls.email.touched && form.controls.email.invalid)" />
+        <app-field-errors [messages]="errors('email')" />
+      </div>
+      @if (!editing()) {
+        <div class="col-md-5">
+          <label class="form-label" for="user-password">{{ 'users.initialPassword' | t }}</label>
+          <input class="form-control" id="user-password" type="password" formControlName="password" autocomplete="new-password" [class.is-invalid]="errors('password').length || (form.controls.password.touched && form.controls.password.invalid)" />
+          <app-field-errors [messages]="errors('password')" />
+        </div>
+      }
+      <div class="col-md-6">
+        <label class="form-label" for="user-fullNameEn">{{ 'users.fullNameEn' | t }}</label>
+        <input class="form-control" id="user-fullNameEn" formControlName="fullNameEn" dir="ltr" [class.is-invalid]="errors('fullNameEn').length" />
+        <app-field-errors [messages]="errors('fullNameEn')" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="user-fullNameAr">{{ 'users.fullNameAr' | t }}</label>
+        <input class="form-control" id="user-fullNameAr" formControlName="fullNameAr" dir="rtl" [class.is-invalid]="errors('fullNameAr').length" />
+        <app-field-errors [messages]="errors('fullNameAr')" />
+      </div>
+      @if (!editing() || session.hasPermission('identity.role.assign')) {
+        <fieldset class="col-12">
+          <legend class="form-label fs-6">{{ 'users.roles' | t }}</legend>
+          <div class="d-flex flex-wrap gap-3">
+            @for (role of roles(); track role.id) {
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" [id]="'role-' + role.name" [checked]="hasRole(role.name)" (change)="toggleRole(role.name, $any($event.target).checked)" />
+                <label class="form-check-label" [for]="'role-' + role.name">{{ role.name }}</label>
+              </div>
+            }
+          </div>
+          <app-field-errors [messages]="errors('roles')" />
+        </fieldset>
+      }
+    </div>
+    <div class="d-flex gap-2 mt-3">
+      <button class="btn btn-primary btn-sm" type="submit" [disabled]="busy()" data-testid="user-save">{{ 'common.save' | t }}</button>
+      <button class="btn btn-outline-secondary btn-sm" type="button" (click)="cancel()" [disabled]="busy()">{{ 'common.cancel' | t }}</button>
+    </div>
+  </form>
+}
+
+@if (!showForm() && error()) {
+  <app-submit-error [error]="error()" />
+}
+
+@if (sessionsOf(); as user) {
+  <div class="card card-body mb-3" data-testid="sessions-panel">
+    <div class="d-flex justify-content-between align-items-center">
+      <h3 class="h6 m-0">{{ 'users.sessionsOf' | t }} {{ user.userName }}</h3>
+      <div class="d-flex gap-2">
+        @if (sessions().length > 0) {
+          <button class="btn btn-outline-danger btn-sm" type="button" (click)="revokeAll()">{{ 'users.revokeAll' | t }}</button>
+        }
+        <button class="btn btn-outline-secondary btn-sm" type="button" (click)="sessionsOf.set(null)">{{ 'common.close' | t }}</button>
+      </div>
+    </div>
+    @if (sessions().length === 0) {
+      <p class="text-secondary m-0 mt-2">{{ 'users.noSessions' | t }}</p>
+    } @else {
+      <table class="table table-sm mt-2 mb-0">
+        <thead><tr><th scope="col">{{ 'users.issuedAt' | t }}</th><th scope="col">{{ 'users.expiresAt' | t }}</th><th scope="col">{{ 'users.ipAddress' | t }}</th><th scope="col"></th></tr></thead>
+        <tbody>
+          @for (s of sessions(); track s.id) {
+            <tr>
+              <td>{{ s.issuedAtUtc | localeDate: 'datetime' }}</td>
+              <td>{{ s.expiresAtUtc | localeDate: 'datetime' }}</td>
+              <td dir="ltr">{{ s.ipAddress ?? '—' }}</td>
+              <td class="text-end"><button class="btn btn-link btn-sm text-danger" type="button" (click)="revokeSession(s.id)">{{ 'users.revoke' | t }}</button></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+}
+
+<app-page-controls [state]="state" />
+
+@if (state.items().length > 0) {
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle" data-testid="user-table">
+      <thead>
+        <tr>
+          <th scope="col">{{ 'users.userName' | t }}</th>
+          <th scope="col">{{ 'common.name' | t }}</th>
+          <th scope="col">{{ 'users.email' | t }}</th>
+          <th scope="col">{{ 'users.roles' | t }}</th>
+          <th scope="col">{{ 'common.status' | t }}</th>
+          <th scope="col"><span class="visually-hidden">{{ 'common.actions' | t }}</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (user of state.items(); track user.id) {
+          <tr>
+            <td dir="ltr">{{ user.userName }}</td>
+            <td>{{ user | bilingual: 'fullName' }}</td>
+            <td dir="ltr">{{ user.email }}</td>
+            <td>{{ user.roles.join(', ') }}</td>
+            <td>
+              <span class="badge" [class.text-bg-success]="user.isActive" [class.text-bg-secondary]="!user.isActive">{{ (user.isActive ? 'common.active' : 'common.inactive') | t }}</span>
+              @if (user.lockedUntilUtc) { <span class="badge text-bg-warning">{{ 'users.locked' | t }}</span> }
+              @if (user.mfaEnabled) { <span class="badge text-bg-info">{{ 'users.mfa' | t }}</span> }
+            </td>
+            <td class="text-end text-nowrap">
+              @if (session.hasPermission('identity.user.write')) {
+                <button class="btn btn-link btn-sm" type="button" (click)="startEdit(user)">{{ 'common.edit' | t }}</button>
+              }
+              @if (session.hasPermission('identity.session.revoke')) {
+                <button class="btn btn-link btn-sm" type="button" (click)="showSessions(user)">{{ 'users.sessions' | t }}</button>
+              }
+              @if (session.hasPermission('identity.user.deactivate')) {
+                <button class="btn btn-link btn-sm" [class.text-danger]="user.isActive" type="button" (click)="toggleActive(user)">
+                  {{ (user.isActive ? 'users.deactivate' : 'users.activate') | t }}
+                </button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

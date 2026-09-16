@@ -56,7 +56,8 @@ export class I18nService {
 export class TranslatePipe implements PipeTransform {
   private readonly i18n = inject(I18nService);
 
-  transform(key: ResourceKey): string {
-    return this.i18n.t(key);
+  /** Accepts a composed key (e.g. a status prefix plus a server value); unknown keys render as the key itself, which tests catch. */
+  transform(key: ResourceKey | string): string {
+    return this.i18n.t(key as ResourceKey);
   }
 }

@@ -1,0 +1,107 @@
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h2 class="h5 m-0">{{ 'courses.title' | t }}</h2>
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+    <label class="visually-hidden" for="course-programme-filter">{{ 'programmes.title' | t }}</label>
+    <select class="form-select form-select-sm w-auto" id="course-programme-filter" (change)="onProgrammeFilter($any($event.target).value)" data-testid="course-programme-filter">
+      <option value="">{{ 'courses.allProgrammes' | t }}</option>
+      @for (programme of programmes(); track programme.id) {
+        <option [value]="programme.id">{{ programme.code }} — {{ programme | bilingual: 'name' }}</option>
+      }
+    </select>
+    <app-search-box id="course-search" (search)="onSearch($event)" />
+    @if (session.hasPermission('sis.course.write')) {
+      <button class="btn btn-primary btn-sm" type="button" (click)="startCreate()" data-testid="course-new">{{ 'courses.new' | t }}</button>
+    }
+  </div>
+</div>
+
+@if (showForm()) {
+  <form class="card card-body mb-3" [formGroup]="form" (ngSubmit)="submit()" novalidate data-testid="course-form">
+    <h3 class="h6">{{ (editing() ? 'courses.edit' : 'courses.new') | t }}</h3>
+    <app-submit-error [error]="error()" />
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label" for="course-programme">{{ 'programmes.title' | t }}</label>
+        <select class="form-select" id="course-programme" formControlName="programmeId" [class.is-invalid]="errors('programmeId').length">
+          <option value="" disabled>{{ 'common.select' | t }}</option>
+          @for (programme of programmes(); track programme.id) {
+            <option [value]="programme.id">{{ programme.code }} — {{ programme | bilingual: 'name' }}</option>
+          }
+        </select>
+        <app-field-errors [messages]="errors('programmeId')" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="course-code">{{ 'courses.code' | t }}</label>
+        <input class="form-control" id="course-code" formControlName="code" [class.is-invalid]="errors('code').length || (form.controls.code.touched && form.controls.code.invalid)" />
+        <app-field-errors [messages]="errors('code')" />
+      </div>
+      <div class="col-md-2">
+        <label class="form-label" for="course-credits">{{ 'courses.credits' | t }}</label>
+        <input class="form-control" id="course-credits" type="number" min="0" max="60" formControlName="credits" [class.is-invalid]="errors('credits').length" />
+        <app-field-errors [messages]="errors('credits')" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="course-nameEn">{{ 'common.nameEn' | t }}</label>
+        <input class="form-control" id="course-nameEn" formControlName="nameEn" dir="ltr" [class.is-invalid]="errors('nameEn').length || (form.controls.nameEn.touched && form.controls.nameEn.invalid)" />
+        <app-field-errors [messages]="errors('nameEn')" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="course-nameAr">{{ 'common.nameAr' | t }}</label>
+        <input class="form-control" id="course-nameAr" formControlName="nameAr" dir="rtl" [class.is-invalid]="errors('nameAr').length || (form.controls.nameAr.touched && form.controls.nameAr.invalid)" />
+        <app-field-errors [messages]="errors('nameAr')" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="course-descriptionEn">{{ 'courses.descriptionEn' | t }}</label>
+        <textarea class="form-control" id="course-descriptionEn" rows="2" formControlName="descriptionEn" dir="ltr"></textarea>
+        <app-field-errors [messages]="errors('descriptionEn')" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="course-descriptionAr">{{ 'courses.descriptionAr' | t }}</label>
+        <textarea class="form-control" id="course-descriptionAr" rows="2" formControlName="descriptionAr" dir="rtl"></textarea>
+        <app-field-errors [messages]="errors('descriptionAr')" />
+      </div>
+    </div>
+    <div class="d-flex gap-2 mt-3">
+      <button class="btn btn-primary btn-sm" type="submit" [disabled]="busy()" data-testid="course-save">{{ 'common.save' | t }}</button>
+      <button class="btn btn-outline-secondary btn-sm" type="button" (click)="cancel()" [disabled]="busy()">{{ 'common.cancel' | t }}</button>
+    </div>
+  </form>
+}
+
+@if (!showForm() && error()) {
+  <app-submit-error [error]="error()" />
+}
+
+<app-page-controls [state]="state" />
+
+@if (state.items().length > 0) {
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle" data-testid="course-table">
+      <thead>
+        <tr>
+          <th scope="col">{{ 'courses.code' | t }}</th>
+          <th scope="col">{{ 'common.name' | t }}</th>
+          <th scope="col">{{ 'programmes.title' | t }}</th>
+          <th scope="col">{{ 'courses.credits' | t }}</th>
+          <th scope="col"><span class="visually-hidden">{{ 'common.actions' | t }}</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (course of state.items(); track course.id) {
+          <tr>
+            <td><code>{{ course.code }}</code></td>
+            <td>{{ course | bilingual: 'name' }}</td>
+            <td>{{ course.programmeCode }}</td>
+            <td>{{ course.credits }}</td>
+            <td class="text-end">
+              @if (session.hasPermission('sis.course.write')) {
+                <button class="btn btn-link btn-sm" type="button" (click)="startEdit(course)">{{ 'common.edit' | t }}</button>
+                <button class="btn btn-link btn-sm text-danger" type="button" (click)="remove(course)">{{ 'common.delete' | t }}</button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

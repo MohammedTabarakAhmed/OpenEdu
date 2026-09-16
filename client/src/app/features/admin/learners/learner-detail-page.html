@@ -1,0 +1,100 @@
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a routerLink="/admin/learners">{{ 'learners.title' | t }}</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ learner()?.learnerNumber ?? '…' }}</li>
+  </ol>
+</nav>
+
+@if (loadError(); as failure) {
+  <div class="alert alert-danger" role="alert" data-testid="state-error">{{ 'common.loadFailed' | t }} {{ failure.message }}</div>
+} @else if (learner(); as l) {
+  <h2 class="h5" data-testid="learner-heading">{{ l.learnerNumber }} — {{ l.user ? (l.user | bilingual: 'fullName') : '—' }}</h2>
+  <p class="text-secondary">{{ 'users.userName' | t }}: {{ l.user?.userName ?? '—' }} · {{ 'users.email' | t }}: {{ l.user?.email ?? '—' }}</p>
+
+  <form class="card card-body mb-4" [formGroup]="form" (ngSubmit)="save()" novalidate data-testid="learner-detail-form">
+    <app-submit-error [error]="error()" />
+    @if (saved()) {
+      <div class="alert alert-success py-2" role="status">{{ 'common.saved' | t }}</div>
+    }
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label" for="ld-status">{{ 'common.status' | t }}</label>
+        <select class="form-select" id="ld-status" formControlName="status">
+          @for (status of statuses; track status) {
+            <option [value]="status">{{ 'learners.status.' + status | t }}</option>
+          }
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="ld-gender">{{ 'learners.gender' | t }}</label>
+        <select class="form-select" id="ld-gender" formControlName="gender">
+          @for (gender of genders; track gender) {
+            <option [value]="gender">{{ 'learners.gender.' + gender | t }}</option>
+          }
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="ld-dob">{{ 'learners.dateOfBirth' | t }}</label>
+        <input class="form-control" id="ld-dob" type="date" formControlName="dateOfBirth" [class.is-invalid]="errors('dateOfBirth').length" />
+        <app-field-errors [messages]="errors('dateOfBirth')" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="ld-phone">{{ 'learners.phone' | t }}</label>
+        <input class="form-control" id="ld-phone" type="tel" formControlName="phone" dir="ltr" />
+        <app-field-errors [messages]="errors('phone')" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="ld-nationalId">{{ 'learners.nationalId' | t }}</label>
+        <input class="form-control" id="ld-nationalId" formControlName="nationalId" autocomplete="off" />
+        <app-field-errors [messages]="errors('nationalId')" />
+      </div>
+    </div>
+    @if (session.hasPermission('sis.learner.write')) {
+      <div class="mt-3">
+        <button class="btn btn-primary btn-sm" type="submit" [disabled]="busy()" data-testid="learner-save">{{ 'common.save' | t }}</button>
+      </div>
+    }
+  </form>
+
+  <h3 class="h6">{{ 'enrolments.title' | t }}</h3>
+  @if (transcript(); as t) {
+    <p class="small text-secondary" data-testid="transcript-summary">
+      {{ 'transcript.completed' | t }}: {{ t.completedCount }} · {{ 'transcript.credits' | t }}: {{ t.creditsEarned }}
+    </p>
+  }
+  <app-page-controls [state]="enrolments" />
+  @if (enrolments.items().length > 0) {
+    <table class="table table-sm align-middle" data-testid="learner-enrolment-table">
+      <thead>
+        <tr>
+          <th scope="col">{{ 'sections.code' | t }}</th>
+          <th scope="col">{{ 'courses.title' | t }}</th>
+          <th scope="col">{{ 'sections.term' | t }}</th>
+          <th scope="col">{{ 'enrolments.enrolledAt' | t }}</th>
+          <th scope="col">{{ 'common.status' | t }}</th>
+          <th scope="col">{{ 'transcript.finalGrade' | t }}</th>
+          <th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (e of enrolments.items(); track e.id) {
+          <tr>
+            <td><a [routerLink]="['/admin/sections', e.section.sectionId]"><code>{{ e.section.sectionCode }}</code></a></td>
+            <td>{{ e.section.courseCode }} — {{ e.section | bilingual: 'courseName' }}</td>
+            <td>{{ e.section.termName }}</td>
+            <td>{{ e.enrolledAtUtc | localeDate: 'datetime' }}</td>
+            <td><span class="badge" [class]="'badge text-bg-' + (e.status === 'Active' ? 'success' : e.status === 'Withdrawn' ? 'secondary' : 'warning')">{{ 'enrolments.status.' + e.status | t }}</span></td>
+            <td>{{ e.finalGrade ?? '—' }}</td>
+            <td class="text-end">
+              @if (session.hasPermission('sis.enrolment.write') && (e.status === 'Active' || e.status === 'AtRisk')) {
+                <button class="btn btn-link btn-sm text-danger" type="button" (click)="withdraw(e)">{{ 'enrolments.withdraw' | t }}</button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+} @else {
+  <p class="text-secondary" role="status" data-testid="state-loading">{{ 'common.loading' | t }}</p>
+}
