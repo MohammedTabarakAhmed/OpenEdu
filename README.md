@@ -27,7 +27,8 @@ npm --prefix client start                         # serves http://localhost:4200
 ```
 
 Open `http://localhost:4200` and sign in. On first run in `Development` or `Demonstration` the host provisions the
-reference data (roles, permission catalogue) and the demonstration identities, and — because no credential may be
+reference data (roles, permission catalogue), the demonstration identities and the demonstration academic structure
+(4 programmes, 12 courses, 12 sections with sessions and grade schemes, 40 learner records, ~126 enrolments), and — because no credential may be
 held in source (section 9.2) — generates the initial passwords and writes them to
 `src/Api/OpenCampus.Api/data/provisioning/credentials.txt` (excluded from source control; the log records only the path).
 To choose the passwords instead, set `Provisioning__AdministratorPassword` and `Provisioning__DemonstrationPassword`
@@ -104,6 +105,16 @@ One SQL Server database holds one schema per module, each with its own `__EFMigr
 | Host | `AuthController` (`api/v1/auth`), `UsersController` (`api/v1/users`), `RolesController`, `AuditController`, JWT bearer validation, deny-by-default fallback policy and one named policy per permission code, `[HasPermission]`, fixed-window rate limiter, `GlobalExceptionHandler` (18.3), `ValidationFilter` (18.2), `RefreshCookie`, `HttpCurrentUser` |
 | Client | `core/auth` (`SessionService`, `authInterceptor`, guards), `core/i18n` (string resources, language/direction), `features/auth/login`, role layouts |
 
+### SIS module (Increment 3)
+
+| Layer | Contents |
+|---|---|
+| Domain | `Programme`, `Course`, `CourseSection` (aggregate owning `Session` and `GradeComponent`; BR-01, BR-03, BR-14, BR-16; Draft → Open → Closed / Cancelled), `Learner`, `Enrolment` (BR-02; `Reinstate` after withdrawal), `GradeEntry` and `Certificate` (schema only until Increments 5–6), `BusinessRules`, enumerations for the 13.6 reference sets |
+| Application | `ProgrammeService`, `CourseService`, `SectionService` (transitions, sessions, grade scheme), `LearnerService`, `EnrolmentService` (transcript), `LearnerSelfService` (catalogue, self-enrolment scoped to the caller), contracts with one validator each (18.2), repository abstractions, `IUserDirectory` (contract to Identity, MB-02), `ICurrentUser`, `SisProvisioner` (DEP-11) |
+| Infrastructure | `SisDbContext` (actor stamping, logical-deletion filter), entity configurations with the 13.3 indexes, repositories with server-side paging and batched lookups, migration `SisEntities` |
+| Host | `ProgrammesController`, `CoursesController`, `SectionsController`, `LearnersController`, `EnrolmentsController`, `CatalogueController`, `MyEnrolmentsController`; `IdentityUserDirectory` (host-side implementation of the SIS→Identity contract, MB-05); rule violations → 422 with the rule reference |
+| Client | `features/admin` (programmes, courses, sections and section detail, learners and learner detail, users), `features/learner` (catalogue, my enrolments), `shared` (paged collection state, page controls, field errors, confirmation, locale date and bilingual pipes) |
+
 ### Configuration (Appendix B)
 
 | Section | Keys | Notes |
@@ -141,6 +152,14 @@ One SQL Server database holds one schema per module, each with its own `__EFMigr
 | 19 | Every presentation of an invalidated refresh credential raises `session.reuse_detected` | SEC-07 literal reading; a legitimate successor presented after its family was revoked is also recorded, which is the evidence an operator needs. |
 | 20 | Initial passwords are generated and written to `data/provisioning/credentials.txt` when not configured | 9.2 forbids credentials in source and SEC-02 forbids writing passwords to the log; DEP-11/DEP-12 require a usable system with no manual data entry. |
 | 21 | Integration tests raise the auth rate limit on the shared host and lower PBKDF2 to its 100 000 floor | The suite would otherwise trip SEC-16 on itself; SEC-16 is verified on a separately configured host, and both values remain valid configurations. |
+| 22 | Section-14 violations are raised by the aggregate as `BusinessRuleViolationException` carrying the rule reference and translated by the single handler to 422 with `title` = `BR-nn` | 11.3 places invariants in the aggregate; 18.3 requires one translation mechanism; API-07 requires rule violations to be distinguishable, and the reference lets a client and a tester tell BR-01 from BR-02. |
+| 23 | The SIS→Identity contract (`IUserDirectory`) is implemented in the host project | MB-02 says "implemented within the providing module", but the section 12 reference table is exhaustive and gives Identity.Infrastructure no reference to Sis.Application. The host is the only project permitted to see both (MB-05); the adapter reads Identity solely through its published repository contract, never its schema (MB-01). |
+| 24 | Delivery modes, section, enrolment and learner statuses and gender are enumerations declared in the domain and persisted as bounded strings, not lookup tables | 13.6 requires these sets to be provisioned rather than entered manually; they are fixed by the design (BR-03 names "Open", BR-12 names "At Risk") and participate in invariants, so a table would add a join and a foreign key without adding any editable data. They need no provisioning step and cannot drift from the code that enforces them. |
+| 25 | Re-enrolment after withdrawal reinstates the existing `Enrolment` row | 13.3 specifies a unique index on (LearnerId, SectionId), so a second row for the pair is impossible. `Enrolment.Reinstate` applies the same preconditions as creation (BR-02, BR-03, BR-01) and resets `EnrolledAtUtc`. |
+| 26 | Administrative enrolment listings require `sis.learner.read` in addition to `sis.enrolment.read` | Appendix C: a code grants capability, not scope. The Learner role holds `sis.enrolment.read` for its own records (`api/v1/me/enrolments`); without the second policy a learner could list any learner's enrolments through the administrative routes (SEC-12). Instructor access to assigned sections arrives with the SEC-12 handlers of Increment 4. |
+| 27 | BR-16 (instructor session overlap) is implemented in Increment 3; BR-04 (weightings total 100 to Open) is not | Section 19 assigns scheduled session management to Increment 3 and BR-04 to Increment 5. Building session scheduling without its governing rule would leave a known-invalid state reachable; opening a section without a complete scheme is the state Increment 5 closes. |
+| 28 | `NationalId` is returned only by single-learner retrieval, never in collection responses | 18.1 forbids logging national identifiers; keeping them out of paged listings limits their spread to the screen that needs them. |
+| 29 | Cross-module references and logical deletion (13.5): a deactivated instructor or learner account keeps its identifier on `CourseSection.InstructorUserId` / `Learner.UserId` | Records retain their history; display resolves through `IUserDirectory` and shows the account as inactive (or unresolved if absent). New references to inactive accounts are refused at creation with a field-keyed 400. |
 
 ## Anonymous endpoints (section 15.4)
 
@@ -157,6 +176,26 @@ The endpoints below are the only ones marked `[AllowAnonymous]`; the first three
 
 Certificate verification (section 15.4) is added in Increment 6.
 
+### Interface summary (Increment 3)
+
+| Route | Policy | Purpose |
+|---|---|---|
+| `GET api/v1/programmes[/{id}]` · `POST` · `PUT {id}` · `DELETE {id}` | `sis.programme.read` / `sis.programme.write` | Programme listing (search, `isActive`, `sort`), creation, amendment, logical deletion (409 while courses exist) |
+| `GET api/v1/courses[/{id}]` · `POST` · `PUT {id}` · `DELETE {id}` | `sis.course.read` / `sis.course.write` | Course listing (search, `programmeId`, `sort`), creation, amendment, deletion (409 while sections exist) |
+| `GET api/v1/sections[/{id}]` · `POST` · `PUT {id}` · `DELETE {id}` | `sis.section.read` / `sis.section.write` | Section listing (search, `courseId`, `programmeId`, `status`, `deliveryMode`, `instructorUserId`, `sort`), creation, amendment, deletion (422 BR-14) |
+| `POST api/v1/sections/{id}/open` · `/close` · `/cancel` | `sis.section.open` | State transitions |
+| `POST/PUT/DELETE api/v1/sections/{id}/sessions[/{sessionId}]` | `sis.section.write` | Scheduled session management (422 BR-16) |
+| `POST/PUT/DELETE api/v1/sections/{id}/grade-components[/{componentId}]` | `sis.section.write` | Grade scheme definition |
+| `GET api/v1/sections/instructors` | `sis.section.write` | Instructor-role accounts available for assignment |
+| `GET api/v1/sections/{id}/enrolments` | `sis.enrolment.read` + `sis.learner.read` | Enrolment listing by section |
+| `GET api/v1/learners[/{id}]` · `POST` · `PUT {id}` | `sis.learner.read` / `sis.learner.write` | Learner listing (search by number or name, `status`, `sort`), creation for a Learner-role account, amendment |
+| `GET api/v1/learners/{id}/enrolments` | `sis.enrolment.read` + `sis.learner.read` | Enrolment listing by learner |
+| `GET api/v1/learners/{id}/transcript` | `sis.report.read` | Transcript |
+| `GET api/v1/learners/unlinked-users` | `sis.learner.write` | Learner-role accounts without a record |
+| `GET api/v1/enrolments[/{id}]` · `POST` · `DELETE {id}` | `sis.enrolment.read`/`write` + `sis.learner.read` | Administrative enrolment (422 BR-01/BR-02/BR-03) and withdrawal |
+| `GET api/v1/catalogue[/{sectionId}]` | `sis.section.read` | Catalogue of Open sections (search, `programmeId`, `deliveryMode`, `sort`) |
+| `GET/POST api/v1/me/enrolments` · `DELETE {id}` · `GET transcript` | `sis.enrolment.read` / `sis.enrolment.write` | Learner self-service, scoped to the caller's learner record (404 otherwise) |
+
 ### Interface summary (Increment 2)
 
 | Route | Policy | Purpose |
@@ -172,9 +211,11 @@ Certificate verification (section 15.4) is added in Increment 6.
 
 ## Delivery status
 
-Increment 1 — Foundation: complete. Increment 2 — Identity: complete (sections 13.2 and 16.1–16.3 in full; authentication,
-session and user administration interfaces; client session handling per 17.2). See `ACCEPTANCE.md` for the step log and
-`DEPENDENCIES.md` for the dependency register (DEL-04).
+Increment 1 — Foundation: complete. Increment 2 — Identity: complete. Increment 3 — Academic structure: complete
+(section 13.3 entities; catalogue and enrolment capabilities; BR-01 to BR-03, BR-14 and BR-16; administrative interface
+and learner catalogue; user-administration screens). See `ACCEPTANCE.md` for the step log and `DEPENDENCIES.md` for the
+dependency register (DEL-04).
 
-Carried forward to later increments: SEC-12 resource-level authorisation (Increments 4–5), 16.5 file handling (Increment 4),
+Carried forward to later increments: SEC-12 resource-level authorisation handlers for instructors (Increments 4–5), BR-04
+(Increment 5), 16.5 file handling (Increment 4), 18.4 reference-data caching (with the first cacheable read path),
 16.6 transport headers and the security test report (Increment 6), full localisation coverage per 17.4 (Increment 6).
