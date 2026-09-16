@@ -1,11 +1,13 @@
 using System.Security.Claims;
 using Microsoft.IdentityModel.JsonWebTokens;
-using OpenCampus.Identity.Application.Abstractions;
-
 namespace OpenCampus.Api.Security;
 
-/// <summary>Resolves the principal of the current request from the validated bearer token.</summary>
-public sealed class HttpCurrentUser(IHttpContextAccessor accessor) : ICurrentUser
+/// <summary>
+/// Resolves the principal of the current request from the validated bearer token. Each module declares its
+/// own current-user abstraction (LR-03, MB-04); the host satisfies all of them with this one implementation.
+/// </summary>
+public sealed class HttpCurrentUser(IHttpContextAccessor accessor)
+    : OpenCampus.Identity.Application.Abstractions.ICurrentUser, OpenCampus.Sis.Application.Abstractions.ICurrentUser
 {
     public const string SessionClaim = "sid";
 

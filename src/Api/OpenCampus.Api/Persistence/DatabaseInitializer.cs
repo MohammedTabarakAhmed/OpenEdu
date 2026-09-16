@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using OpenCampus.Identity.Application.Provisioning;
 using OpenCampus.Identity.Infrastructure.Persistence;
 using OpenCampus.Lms.Infrastructure.Persistence;
+using OpenCampus.Sis.Application.Provisioning;
 using OpenCampus.Sis.Infrastructure.Persistence;
 
 namespace OpenCampus.Api.Persistence;
@@ -27,6 +28,10 @@ public static class DatabaseInitializer
         using var scope = services.CreateScope();
 
         var generated = await scope.ServiceProvider.GetRequiredService<IdentityProvisioner>().RunAsync(cancellationToken);
+
+        // SIS after Identity: its instructor and learner references resolve through the Identity contract (13.5).
+        await scope.ServiceProvider.GetRequiredService<SisProvisioner>().RunAsync(cancellationToken);
+
         if (generated.Count == 0)
         {
             return;

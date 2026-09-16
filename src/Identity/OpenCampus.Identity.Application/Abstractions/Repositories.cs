@@ -24,6 +24,17 @@ public interface IUserRepository
 
     Task<PagedResult<User>> ListAsync(UserQuery query, CancellationToken cancellationToken);
 
+    // Published for cross-module display-identity resolution (6.5), implemented by the host adapter (MB-02).
+
+    /// <summary>Users by identifier, roles included, in one query.</summary>
+    Task<IReadOnlyList<User>> FindManyAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken);
+
+    /// <summary>Active users holding the named role, ordered by user name.</summary>
+    Task<IReadOnlyList<User>> ListActiveInRoleAsync(string roleName, CancellationToken cancellationToken);
+
+    /// <summary>Identifiers of users whose user name, e-mail or full name contains the term, bounded by <paramref name="limit"/>.</summary>
+    Task<IReadOnlyList<Guid>> SearchIdsAsync(string term, int limit, CancellationToken cancellationToken);
+
     void Add(User user);
 }
 

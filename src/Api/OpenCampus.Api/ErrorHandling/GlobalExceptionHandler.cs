@@ -17,6 +17,8 @@ public sealed class GlobalExceptionHandler(
         var (status, title, detail) = exception switch
         {
             EntityNotFoundException => (StatusCodes.Status404NotFound, "not_found", "The requested resource was not found."),
+            // Section 14 rule: the title carries the rule reference so a client can distinguish BR-01 from BR-02 (API-07).
+            BusinessRuleViolationException rule => (StatusCodes.Status422UnprocessableEntity, rule.RuleCode, rule.Message),
             DomainException domain => (StatusCodes.Status422UnprocessableEntity, "rule_violation", domain.Message),
             OperationCanceledException => (StatusCodes.Status499ClientClosedRequest, "request_cancelled", "The request was cancelled."),
             _ => (StatusCodes.Status500InternalServerError, "internal_error", "An unexpected error occurred."),

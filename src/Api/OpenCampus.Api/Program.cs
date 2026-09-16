@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using System.Text.Json.Serialization;
 using OpenCampus.Api.ErrorHandling;
+using OpenCampus.Api.Integration;
 using OpenCampus.Api.Middleware;
 using OpenCampus.Api.Persistence;
 using OpenCampus.Api.Security;
@@ -16,6 +18,8 @@ using OpenCampus.Identity.Infrastructure.Persistence;
 using OpenCampus.Identity.Infrastructure.Security;
 using OpenCampus.Lms.Infrastructure;
 using OpenCampus.Lms.Infrastructure.Persistence;
+using OpenCampus.Sis.Application;
+using OpenCampus.Sis.Application.Abstractions;
 using OpenCampus.Sis.Infrastructure;
 using OpenCampus.Sis.Infrastructure.Persistence;
 using Serilog;
@@ -32,7 +36,9 @@ var connectionString = builder.Configuration.GetConnectionString("OpenCampus")
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
+builder.Services.AddScoped<HttpCurrentUser>();
+builder.Services.AddScoped<OpenCampus.Identity.Application.Abstractions.ICurrentUser>(sp => sp.GetRequiredService<HttpCurrentUser>());
+builder.Services.AddScoped<OpenCampus.Sis.Application.Abstractions.ICurrentUser>(sp => sp.GetRequiredService<HttpCurrentUser>());
 
 // Key material lives in a configured directory excluded from source control (SDD 9.2, Appendix B).
 var keyDirectory = builder.Configuration["DataProtection:KeyDirectory"]
@@ -44,8 +50,11 @@ builder.Services.AddDataProtection()
 // Module composition occurs only here (MB-05).
 builder.Services.AddIdentityApplication();
 builder.Services.AddIdentityInfrastructure(builder.Configuration, connectionString, builder.Environment.ContentRootPath);
-builder.Services.AddSisInfrastructure(connectionString);
+builder.Services.AddSisApplication();
+builder.Services.AddSisInfrastructure(builder.Configuration, connectionString);
 builder.Services.AddLmsInfrastructure(connectionString);
+// Cross-module contract of SIS to Identity (6.5, MB-02), implemented at the composition root.
+builder.Services.AddScoped<IUserDirectory, IdentityUserDirectory>();
 
 // SEC-03/SEC-04: bearer tokens are validated against the public half of the persisted RSA key.
 builder.Services
@@ -87,7 +96,10 @@ builder.Services.AddHealthChecks()
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-builder.Services.AddControllers(options => options.Filters.Add<ValidationFilter>());
+builder.Services
+    .AddControllers(options => options.Filters.Add<ValidationFilter>())
+    // Reference sets (13.6) travel as their names, e.g. "Open", "InPerson", not as integers.
+    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddOpenApi();
 
 var app = builder.Build();

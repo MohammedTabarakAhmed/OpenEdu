@@ -20,6 +20,19 @@ public static class ProblemMapping
     public static ProblemDetails ToProblemDetails(this Error error, HttpContext httpContext)
     {
         var status = StatusCodeFor(error.Type);
+        if (error.Type == ErrorType.Validation)
+        {
+            // API-04: validation failures carry a field-keyed error collection; the code names the field.
+            return new ValidationProblemDetails(new Dictionary<string, string[]> { [error.Code] = [error.Message] })
+            {
+                Type = "urn:opencampus:error:validation",
+                Title = "validation",
+                Status = status,
+                Detail = error.Message,
+                Instance = httpContext.Request.Path,
+            };
+        }
+
         return new ProblemDetails
         {
             Type = $"urn:opencampus:error:{error.Code}",
@@ -41,6 +54,14 @@ public static class ProblemMapping
     {
         return result.IsSuccess
             ? controller.Ok(result.Value)
+            : controller.StatusCode(StatusCodeFor(result.Error.Type), result.Error.ToProblemDetails(controller.HttpContext));
+    }
+
+    /// <summary>API-05: creation returns 201 with a Location header pointing at the retrieval action.</summary>
+    public static ActionResult<T> ToCreatedResult<T>(this Result<T> result, ControllerBase controller, string actionName, Func<T, object?> routeValues)
+    {
+        return result.IsSuccess
+            ? controller.CreatedAtAction(actionName, routeValues(result.Value), result.Value)
             : controller.StatusCode(StatusCodeFor(result.Error.Type), result.Error.ToProblemDetails(controller.HttpContext));
     }
 }

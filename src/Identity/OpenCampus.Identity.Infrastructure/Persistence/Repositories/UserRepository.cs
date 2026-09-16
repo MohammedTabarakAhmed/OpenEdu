@@ -76,5 +76,32 @@ internal sealed class UserRepository(IdentityDbContext db) : IUserRepository
         return new PagedResult<User>(items, query.Page, query.PageSize, total);
     }
 
+    public async Task<IReadOnlyList<User>> FindManyAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken)
+    {
+        var set = ids.Distinct().ToArray();
+        return await db.Users.Include(u => u.Roles).Where(u => set.Contains(u.Id)).ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<User>> ListActiveInRoleAsync(string roleName, CancellationToken cancellationToken)
+    {
+        var roleIds = db.Roles.Where(r => r.Name == roleName).Select(r => r.Id);
+        return await db.Users
+            .Include(u => u.Roles)
+            .Where(u => u.IsActive && u.Roles.Any(ur => roleIds.Contains(ur.RoleId)))
+            .OrderBy(u => u.UserName)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Guid>> SearchIdsAsync(string term, int limit, CancellationToken cancellationToken)
+    {
+        var trimmed = term.Trim();
+        return await db.Users
+            .Where(u => u.UserName.Contains(trimmed) || u.Email.Contains(trimmed) || u.FullNameEn.Contains(trimmed) || u.FullNameAr.Contains(trimmed))
+            .OrderBy(u => u.UserName)
+            .Select(u => u.Id)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+    }
+
     public void Add(User user) => db.Users.Add(user);
 }
