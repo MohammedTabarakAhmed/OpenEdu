@@ -137,6 +137,14 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
+// Production guard: demonstration accounts share one generated password and must never exist on a real deployment;
+// refusing to start is safer than a warning nobody reads. Migrations are applied by an operator in Production (9.3).
+if (app.Environment.IsProduction()
+    && app.Configuration.GetValue<bool>("Provisioning:DemonstrationDataEnabled"))
+{
+    throw new InvalidOperationException("Provisioning:DemonstrationDataEnabled must be false in the Production environment.");
+}
+
 if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Demonstration"))
 {
     await DatabaseInitializer.MigrateAsync(app.Services);
