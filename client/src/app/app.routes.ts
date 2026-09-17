@@ -30,6 +30,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/legal/privacy-notice-page').then((m) => m.PrivacyNoticePage),
   },
   {
+    path: 'terms',
+    loadComponent: () => import('./features/legal/terms-of-use-page').then((m) => m.TermsOfUsePage),
+  },
+  {
     path: 'admin',
     canActivate: [roleGuard(Roles.Administrator, Roles.Registrar)],
     loadComponent: () => import('./layouts/admin/admin-layout').then((m) => m.AdminLayout),

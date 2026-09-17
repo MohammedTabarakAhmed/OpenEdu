@@ -22,7 +22,7 @@ describe('PrivacyNoticePage', () => {
     expect(text()).toContain(en['privacy.title']);
     expect(text()).toContain(en['privacy.retention.body']);
     expect(text()).toContain(en['privacy.notices.body']);
-    expect(fixture.nativeElement.querySelectorAll('h2').length).toBe(8);
+    expect(fixture.nativeElement.querySelectorAll('h2').length).toBe(12);
 
     TestBed.inject(I18nService).use('ar');
     fixture.detectChanges();

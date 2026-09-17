@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '../../core/i18n/i18n.service';
 import { Mark } from '../../shared/brand';
 import { LocaleDatePipe } from '../../shared/ui';
+import { OperatorDetailsBlock } from './operator';
 
 /**
  * Privacy notice — optional scope added after the mandatory increments (SDD section 3 permits optional scope only
@@ -12,7 +13,7 @@ import { LocaleDatePipe } from '../../shared/ui';
  * The date is the notice's own revision date, updated whenever the text changes.
  */
 @Component({
-  imports: [RouterLink, TranslatePipe, LocaleDatePipe, Mark],
+  imports: [RouterLink, TranslatePipe, LocaleDatePipe, Mark, OperatorDetailsBlock],
   template: `
     <div class="row justify-content-center">
       <div class="col-12 col-lg-8">
@@ -55,10 +56,30 @@ import { LocaleDatePipe } from '../../shared/ui';
             <h2 class="h6 mt-4">{{ 'privacy.notices.title' | t }}</h2>
             <p>{{ 'privacy.notices.body' | t }}</p>
 
+            <h2 class="h6 mt-4">{{ 'privacy.rights.title' | t }}</h2>
+            <p>{{ 'privacy.rights.intro' | t }}</p>
+            <ul data-testid="privacy-rights">
+              <li>{{ 'privacy.rights.access' | t }}</li>
+              <li>{{ 'privacy.rights.rectify' | t }}</li>
+              <li>{{ 'privacy.rights.erase' | t }}</li>
+              <li>{{ 'privacy.rights.portability' | t }}</li>
+              <li>{{ 'privacy.rights.object' | t }}</li>
+              <li>{{ 'privacy.rights.complain' | t }}</li>
+            </ul>
+            <p>{{ 'privacy.rights.basis' | t }}</p>
+
+            <h2 class="h6 mt-4">{{ 'privacy.location.title' | t }}</h2>
+            <p>{{ 'privacy.location.body' | t }}</p>
+
+            <h2 class="h6 mt-4">{{ 'privacy.breach.title' | t }}</h2>
+            <p>{{ 'privacy.breach.body' | t }}</p>
+
             <h2 class="h6 mt-4">{{ 'privacy.contact.title' | t }}</h2>
             <p class="mb-0">{{ 'privacy.contact.body' | t }}</p>
 
-            <p class="mt-4 mb-0"><a routerLink="/verify">{{ 'verify.title' | t }}</a></p>
+            <app-operator-details />
+
+            <p class="mt-4 mb-0"><a routerLink="/terms">{{ 'terms.title' | t }}</a> &middot; <a routerLink="/verify">{{ 'verify.title' | t }}</a></p>
           </div>
         </article>
       </div>
