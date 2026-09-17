@@ -120,7 +120,44 @@ internal sealed class EnrolmentRepository(SisDbContext db) : IEnrolmentRepositor
         return await source.ToPageAsync(query.Page, query.PageSize, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Enrolment>> ListActiveInSectionAsync(Guid sectionId, CancellationToken cancellationToken) =>
+        await db.Enrolments
+            .Where(e => e.SectionId == sectionId && (e.Status == EnrolmentStatus.Active || e.Status == EnrolmentStatus.AtRisk))
+            .OrderBy(e => e.EnrolledAtUtc)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<Enrolment>> ListGradableInSectionAsync(Guid sectionId, CancellationToken cancellationToken) =>
+        await db.Enrolments
+            .Where(e => e.SectionId == sectionId && e.Status != EnrolmentStatus.Withdrawn)
+            .OrderBy(e => e.EnrolledAtUtc)
+            .ToListAsync(cancellationToken);
+
+    public Task<Enrolment?> FindByUserAndSectionAsync(Guid userId, Guid sectionId, CancellationToken cancellationToken) =>
+        db.Enrolments
+            .Where(e => e.SectionId == sectionId)
+            .Join(db.Learners.Where(l => l.UserId == userId), e => e.LearnerId, l => l.Id, (e, _) => e)
+            .SingleOrDefaultAsync(cancellationToken);
+
     public void Add(Enrolment enrolment) => db.Enrolments.Add(enrolment);
+}
+
+internal sealed class GradeEntryRepository(SisDbContext db) : IGradeEntryRepository
+{
+    public Task<GradeEntry?> FindByIdAsync(Guid id, CancellationToken cancellationToken) =>
+        db.GradeEntries.SingleOrDefaultAsync(g => g.Id == id, cancellationToken);
+
+    public Task<GradeEntry?> FindByEnrolmentAndComponentAsync(Guid enrolmentId, Guid gradeComponentId, CancellationToken cancellationToken) =>
+        db.GradeEntries.SingleOrDefaultAsync(g => g.EnrolmentId == enrolmentId && g.GradeComponentId == gradeComponentId, cancellationToken);
+
+    public async Task<IReadOnlyList<GradeEntry>> ListByEnrolmentAsync(Guid enrolmentId, CancellationToken cancellationToken) =>
+        await db.GradeEntries.Where(g => g.EnrolmentId == enrolmentId).ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<GradeEntry>> ListBySectionAsync(Guid sectionId, CancellationToken cancellationToken) =>
+        await db.GradeEntries
+            .Join(db.Enrolments.Where(e => e.SectionId == sectionId), g => g.EnrolmentId, e => e.Id, (g, _) => g)
+            .ToListAsync(cancellationToken);
+
+    public void Add(GradeEntry entry) => db.GradeEntries.Add(entry);
 }
 
 internal sealed class SisUnitOfWork(SisDbContext db) : ISisUnitOfWork

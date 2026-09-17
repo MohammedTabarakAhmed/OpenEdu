@@ -15,7 +15,7 @@ public class CourseSectionTests
         section.Status.ShouldBe(SectionStatus.Draft);
         section.Code.ShouldBe("CS101-A");
         section.Sessions.ShouldBeEmpty();
-        section.GradeComponents.ShouldBeEmpty();
+        section.TotalWeightPercent.ShouldBe(100m);
     }
 
     [Theory]
@@ -157,7 +157,7 @@ public class CourseSectionTests
     [Fact]
     public void GradeScheme_WeightsMayNotExceedOneHundred()
     {
-        var section = Section(status: SectionStatus.Draft);
+        var section = Section(status: SectionStatus.Draft, withScheme: false);
         section.AddGradeComponent("Coursework", "أعمال", 60m, 100m);
         section.AddGradeComponent("Exam", "امتحان", 40m, 100m);
 
@@ -178,7 +178,7 @@ public class CourseSectionTests
     [Fact]
     public void GradeScheme_AmendAccountsForTheComponentBeingReplaced()
     {
-        var section = Section(status: SectionStatus.Draft);
+        var section = Section(status: SectionStatus.Draft, withScheme: false);
         var component = section.AddGradeComponent("Coursework", "أعمال", 60m, 100m);
         section.AddGradeComponent("Exam", "امتحان", 40m, 100m);
 

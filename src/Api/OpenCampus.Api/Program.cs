@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
@@ -16,6 +18,9 @@ using OpenCampus.Identity.Application.Security;
 using OpenCampus.Identity.Infrastructure;
 using OpenCampus.Identity.Infrastructure.Persistence;
 using OpenCampus.Identity.Infrastructure.Security;
+using OpenCampus.Lms.Application;
+using OpenCampus.Lms.Application.Abstractions;
+using OpenCampus.Lms.Application.Storage;
 using OpenCampus.Lms.Infrastructure;
 using OpenCampus.Lms.Infrastructure.Persistence;
 using OpenCampus.Sis.Application;
@@ -39,6 +44,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<HttpCurrentUser>();
 builder.Services.AddScoped<OpenCampus.Identity.Application.Abstractions.ICurrentUser>(sp => sp.GetRequiredService<HttpCurrentUser>());
 builder.Services.AddScoped<OpenCampus.Sis.Application.Abstractions.ICurrentUser>(sp => sp.GetRequiredService<HttpCurrentUser>());
+builder.Services.AddScoped<OpenCampus.Lms.Application.Abstractions.ICurrentUser>(sp => sp.GetRequiredService<HttpCurrentUser>());
 
 // Key material lives in a configured directory excluded from source control (SDD 9.2, Appendix B).
 var keyDirectory = builder.Configuration["DataProtection:KeyDirectory"]
@@ -52,9 +58,21 @@ builder.Services.AddIdentityApplication();
 builder.Services.AddIdentityInfrastructure(builder.Configuration, connectionString, builder.Environment.ContentRootPath);
 builder.Services.AddSisApplication();
 builder.Services.AddSisInfrastructure(builder.Configuration, connectionString);
-builder.Services.AddLmsInfrastructure(connectionString);
-// Cross-module contract of SIS to Identity (6.5, MB-02), implemented at the composition root.
+builder.Services.AddLmsApplication();
+builder.Services.AddLmsInfrastructure(builder.Configuration, connectionString, builder.Environment.ContentRootPath);
+// Cross-module contracts (6.5, MB-02), implemented at the composition root: SIS → Identity, LMS → SIS.
 builder.Services.AddScoped<IUserDirectory, IdentityUserDirectory>();
+builder.Services.AddScoped<ISectionAccess, SisSectionAccess>();
+builder.Services.AddScoped<IAssessmentOutcomes, SisAssessmentOutcomes>();
+builder.Services.AddScoped<IAuditTrail, IdentityAuditTrail>();
+
+// SEC-22 at the framework level: the multipart and request body limits mirror Storage:MaxUploadSizeBytes,
+// so an oversized upload is cut off before the application layer sees it (which enforces the same bound again).
+var maxUpload = builder.Configuration.GetSection(StorageOptions.SectionName).Get<StorageOptions>()?.MaxUploadSizeBytes
+    ?? new StorageOptions().MaxUploadSizeBytes;
+const long multipartOverhead = 64 * 1024;
+builder.Services.Configure<FormOptions>(options => options.MultipartBodyLengthLimit = maxUpload);
+builder.Services.Configure<KestrelServerOptions>(options => options.Limits.MaxRequestBodySize = maxUpload + multipartOverhead);
 
 // SEC-03/SEC-04: bearer tokens are validated against the public half of the persisted RSA key.
 builder.Services
@@ -100,6 +118,10 @@ builder.Services
     .AddControllers(options => options.Filters.Add<ValidationFilter>())
     // Reference sets (13.6) travel as their names, e.g. "Open", "InPerson", not as integers.
     .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+// API-04: binding failures (malformed JSON, unreadable form) use the same problem shape as the validation filter.
+// Registered after AddControllers so the framework's own default does not override it.
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options =>
+    options.InvalidModelStateResponseFactory = context => ProblemMapping.ToInvalidModelStateResult(context));
 builder.Services.AddOpenApi();
 
 var app = builder.Build();

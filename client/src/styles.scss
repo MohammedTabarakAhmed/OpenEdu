@@ -1,1 +1,232 @@
-/* You can add global styles to this file, and also import other style files */
+/*
+ * OpenCampus visual identity (Increment 4, design decision recorded in README).
+ * Bootstrap is re-themed through its CSS custom properties rather than overridden rule by rule (17.1:
+ * global overrides minimised and justified). Everything component-specific stays in the component.
+ */
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/500.css';
+@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/ibm-plex-sans-arabic/400.css';
+@import '@fontsource/ibm-plex-sans-arabic/500.css';
+@import '@fontsource/ibm-plex-sans-arabic/600.css';
+
+:root {
+  /* Tokens: neutral names, no regional or product naming. */
+  --oc-deep: #0f4c5c;
+  --oc-deep-strong: #0b3a47;
+  --oc-sky: #cfe6ec;
+  --oc-sky-soft: #e8f2f5;
+  --oc-amber: #c8952b;
+  --oc-signal: #b3423b;
+  --oc-paper: #f6f8f8;
+  --oc-ink: #1b262c;
+  --oc-ink-soft: #55656d;
+  --oc-line: #d7e0e3;
+
+  --oc-radius: 6px;
+  --oc-motion: 150ms;
+  --oc-font-latin: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --oc-font-arabic: 'IBM Plex Sans Arabic', 'IBM Plex Sans', system-ui, sans-serif;
+
+  /* Bootstrap 5.3 root variables mapped onto the tokens. */
+  --bs-body-bg: var(--oc-paper);
+  --bs-body-color: var(--oc-ink);
+  --bs-secondary-color: var(--oc-ink-soft);
+  --bs-tertiary-bg: #ffffff;
+  --bs-border-color: var(--oc-line);
+  --bs-border-radius: var(--oc-radius);
+  --bs-border-radius-sm: 4px;
+  --bs-border-radius-lg: 8px;
+  --bs-link-color: var(--oc-deep);
+  --bs-link-color-rgb: 15, 76, 92;
+  --bs-link-hover-color: var(--oc-deep-strong);
+  --bs-link-hover-color-rgb: 11, 58, 71;
+  --bs-primary: var(--oc-deep);
+  --bs-primary-rgb: 15, 76, 92;
+  --bs-danger: var(--oc-signal);
+  --bs-danger-rgb: 179, 66, 59;
+  --bs-warning: var(--oc-amber);
+  --bs-warning-rgb: 200, 149, 43;
+  --bs-body-font-family: var(--oc-font-latin);
+  --bs-code-color: var(--oc-deep-strong);
+  --bs-focus-ring-color: rgba(15, 76, 92, 0.25);
+}
+
+html[dir='rtl'] {
+  --bs-body-font-family: var(--oc-font-arabic);
+}
+
+body {
+  font-family: var(--bs-body-font-family);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ----- Buttons and form controls: token colours, flat surfaces, no shadows ----- */
+
+.btn {
+  --bs-btn-border-radius: var(--oc-radius);
+  transition: background-color var(--oc-motion) ease, border-color var(--oc-motion) ease, color var(--oc-motion) ease;
+}
+
+.btn-primary {
+  --bs-btn-bg: var(--oc-deep);
+  --bs-btn-border-color: var(--oc-deep);
+  --bs-btn-hover-bg: var(--oc-deep-strong);
+  --bs-btn-hover-border-color: var(--oc-deep-strong);
+  --bs-btn-active-bg: var(--oc-deep-strong);
+  --bs-btn-active-border-color: var(--oc-deep-strong);
+  --bs-btn-disabled-bg: var(--oc-deep);
+  --bs-btn-disabled-border-color: var(--oc-deep);
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--oc-deep);
+  --bs-btn-border-color: var(--oc-deep);
+  --bs-btn-hover-bg: var(--oc-deep);
+  --bs-btn-hover-border-color: var(--oc-deep);
+  --bs-btn-active-bg: var(--oc-deep);
+  --bs-btn-active-border-color: var(--oc-deep);
+}
+
+.btn-outline-danger {
+  --bs-btn-color: var(--oc-signal);
+  --bs-btn-border-color: var(--oc-signal);
+  --bs-btn-hover-bg: var(--oc-signal);
+  --bs-btn-hover-border-color: var(--oc-signal);
+}
+
+.btn-success {
+  --bs-btn-bg: var(--oc-deep);
+  --bs-btn-border-color: var(--oc-deep);
+  --bs-btn-hover-bg: var(--oc-deep-strong);
+  --bs-btn-hover-border-color: var(--oc-deep-strong);
+}
+
+.form-control,
+.form-select {
+  border-radius: var(--oc-radius);
+  transition: border-color var(--oc-motion) ease, box-shadow var(--oc-motion) ease;
+
+  &:focus {
+    border-color: var(--oc-deep);
+    box-shadow: 0 0 0 0.2rem var(--bs-focus-ring-color);
+  }
+}
+
+.form-check-input:checked {
+  background-color: var(--oc-deep);
+  border-color: var(--oc-deep);
+}
+
+/* ----- Surfaces ----- */
+
+.card,
+.list-group,
+.table-responsive {
+  border-color: var(--oc-line);
+  box-shadow: none;
+}
+
+.card {
+  --bs-card-border-color: var(--oc-line);
+  --bs-card-cap-bg: var(--oc-sky-soft);
+  --bs-card-border-radius: var(--oc-radius);
+}
+
+.table {
+  --bs-table-border-color: var(--oc-line);
+  --bs-table-striped-bg: var(--oc-sky-soft);
+}
+
+.alert {
+  --bs-alert-border-radius: var(--oc-radius);
+}
+
+.alert-warning {
+  --bs-alert-color: #5e4510;
+  --bs-alert-bg: #f8efdc;
+  --bs-alert-border-color: #e9d5a6;
+}
+
+.alert-danger {
+  --bs-alert-color: #6e2622;
+  --bs-alert-bg: #f6e3e2;
+  --bs-alert-border-color: #e6bcb9;
+}
+
+.alert-info {
+  --bs-alert-color: var(--oc-deep-strong);
+  --bs-alert-bg: var(--oc-sky-soft);
+  --bs-alert-border-color: var(--oc-sky);
+}
+
+.badge.text-bg-primary { background-color: var(--oc-deep) !important; }
+.badge.text-bg-success { background-color: var(--oc-deep) !important; }
+.badge.text-bg-warning { background-color: var(--oc-amber) !important; color: #fff !important; }
+.badge.text-bg-danger { background-color: var(--oc-signal) !important; }
+
+/* ----- Navigation: the horizon marks the active destination ----- */
+
+.nav-pills {
+  --bs-nav-pills-border-radius: var(--oc-radius);
+  --bs-nav-pills-link-active-bg: var(--oc-sky);
+  --bs-nav-pills-link-active-color: var(--oc-deep-strong);
+  --bs-nav-link-color: var(--oc-ink-soft);
+  --bs-nav-link-hover-color: var(--oc-deep);
+
+  .nav-link {
+    position: relative;
+    transition: background-color var(--oc-motion) ease, color var(--oc-motion) ease;
+  }
+
+  .nav-link.active::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0.75rem;
+    bottom: 0.25rem;
+    height: 3px;
+    background: linear-gradient(to bottom, var(--oc-sky) 0 50%, var(--oc-deep) 50% 100%);
+    border-radius: 2px;
+  }
+}
+
+.navbar {
+  --bs-navbar-brand-color: var(--oc-deep-strong);
+  --bs-navbar-brand-hover-color: var(--oc-deep);
+  --bs-navbar-color: var(--oc-ink-soft);
+  --bs-navbar-hover-color: var(--oc-deep);
+}
+
+/* ----- The horizon device: a two-tone rule (sky over deep) under the wordmark and page titles ----- */
+
+.oc-horizon {
+  display: block;
+  width: 3rem;
+  height: 4px;
+  margin-block: 0.5rem 1rem;
+  border-radius: 2px;
+  background: linear-gradient(to bottom, var(--oc-sky) 0 50%, var(--oc-deep) 50% 100%);
+}
+
+.oc-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.oc-mark {
+  flex: none;
+}
+
+/* ----- Motion: on user actions only, and not at all when the user asks for less ----- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

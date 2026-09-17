@@ -4,9 +4,10 @@ import { Roles } from './core/auth/auth.models';
 import { SessionService } from './core/auth/session.service';
 import { HealthService } from './core/health.service';
 import { I18nService, TranslatePipe } from './core/i18n/i18n.service';
+import { Mark } from './shared/brand';
 
 @Component({
-  imports: [RouterOutlet, RouterLink, TranslatePipe],
+  imports: [RouterOutlet, RouterLink, TranslatePipe, Mark],
   selector: 'app-root',
   styleUrl: './app.scss',
   templateUrl: './app.html',

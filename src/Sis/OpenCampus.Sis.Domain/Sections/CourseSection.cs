@@ -96,11 +96,17 @@ public sealed class CourseSection : Entity
 
     // ----- State transitions (15.3 "section state transition") -----
 
+    /// <summary>BR-04: the grade scheme must total exactly 100 percent before the section opens.</summary>
     public void Open()
     {
         if (Status != SectionStatus.Draft)
         {
             throw new DomainException($"Only a Draft section can be opened; this section is {Status}.");
+        }
+
+        if (TotalWeightPercent != 100)
+        {
+            throw BusinessRules.Br04WeightingsNotComplete(TotalWeightPercent);
         }
 
         Status = SectionStatus.Open;
@@ -140,6 +146,49 @@ public sealed class CourseSection : Entity
         {
             throw BusinessRules.Br01SectionFull();
         }
+    }
+
+    /// <summary>
+    /// BR-07: grade release is refused while any component remains ungraded for an active enrolment. The caller
+    /// supplies the count of (active enrolment × component) pairs without a grade entry; the section owns the rule.
+    /// Release is meaningful only once the section has a scheme and is Open or Closed.
+    /// </summary>
+    public void EnsureGradesReleasable(int ungradedPairCount)
+    {
+        if (Status is not (SectionStatus.Open or SectionStatus.Closed))
+        {
+            throw new DomainException($"Grades of a {Status} section cannot be released.");
+        }
+
+        if (_gradeComponents.Count == 0)
+        {
+            throw new DomainException("The section has no grade scheme to release.");
+        }
+
+        if (ungradedPairCount > 0)
+        {
+            throw BusinessRules.Br07UngradedComponents();
+        }
+    }
+
+    /// <summary>
+    /// The weighted final grade on a 0–100 scale for one enrolment's scores, keyed by component. Every component
+    /// must be present (BR-07 guarantees it at release).
+    /// </summary>
+    public decimal ComputeFinalGrade(IReadOnlyDictionary<Guid, decimal> scoresByComponentId)
+    {
+        decimal total = 0;
+        foreach (var component in _gradeComponents)
+        {
+            if (!scoresByComponentId.TryGetValue(component.Id, out var score))
+            {
+                throw new DomainException($"No score is recorded for component '{component.NameEn}'.");
+            }
+
+            total += component.WeightPercent * (score / component.MaxScore);
+        }
+
+        return Math.Round(total, 2, MidpointRounding.AwayFromZero);
     }
 
     /// <summary>BR-14: deletion is refused while any enrolment (active or not) exists.</summary>
@@ -191,7 +240,7 @@ public sealed class CourseSection : Entity
     private Session FindSession(Guid sessionId) =>
         _sessions.SingleOrDefault(s => s.Id == sessionId) ?? throw new EntityNotFoundException(nameof(Session), sessionId);
 
-    // ----- Grade scheme (15.3 "grade scheme definition"); BR-04 is enforced on Open in Increment 5 -----
+    // ----- Grade scheme (15.3 "grade scheme definition"); BR-04 is enforced on Open -----
 
     public GradeComponent AddGradeComponent(string nameEn, string nameAr, decimal weightPercent, decimal maxScore)
     {

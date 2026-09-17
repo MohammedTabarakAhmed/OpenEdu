@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { Mark } from '../../shared/brand';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -9,7 +10,7 @@ import { ResourceKey } from '../../core/i18n/resources';
 
 /** Credential step followed, where required, by the multi-factor step (SEC-09). */
 @Component({
-  imports: [FormsModule, TranslatePipe],
+  imports: [FormsModule, TranslatePipe, Mark],
   templateUrl: './login.html',
 })
 export class Login {

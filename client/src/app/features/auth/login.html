@@ -1,6 +1,10 @@
 <div class="row justify-content-center">
   <div class="col-12 col-sm-8 col-md-5">
-    <h1 class="h4 mb-3">{{ 'login.title' | t }}</h1>
+    <div class="card">
+    <div class="card-body p-4">
+    <p class="oc-brand mb-1"><app-mark [size]="28" /> {{ 'app.title' | t }}</p>
+    <h1 class="h4 mb-0">{{ 'login.title' | t }}</h1>
+    <span class="oc-horizon" aria-hidden="true"></span>
 
     @if (notice(); as noticeKey) {
       <div class="alert alert-info" role="status" data-testid="login-notice">{{ noticeKey | t }}</div>
@@ -40,5 +44,7 @@
         </div>
       </form>
     }
+    </div>
+    </div>
   </div>
 </div>

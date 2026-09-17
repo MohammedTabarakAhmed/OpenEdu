@@ -9,12 +9,19 @@ internal static class SisFixtures
     public static readonly DateTime Now = new(2026, 9, 16, 9, 0, 0, DateTimeKind.Utc);
     public static readonly Guid InstructorId = Guid.NewGuid();
 
-    public static CourseSection Section(int capacity = 2, SectionStatus status = SectionStatus.Open, Guid? instructorId = null)
+    public static CourseSection Section(int capacity = 2, SectionStatus status = SectionStatus.Open, Guid? instructorId = null, bool withScheme = true)
     {
         var section = CourseSection.Create(
             Guid.NewGuid(), "cs101-a", "2026 Autumn",
             new DateOnly(2026, 9, 1), new DateOnly(2026, 12, 15),
             capacity, instructorId ?? InstructorId, DeliveryMode.InPerson);
+
+        // BR-04: a section opens only with a scheme totalling 100 percent.
+        if (withScheme)
+        {
+            section.AddGradeComponent("Coursework", "أعمال", 60m, 100m);
+            section.AddGradeComponent("Final", "نهائي", 40m, 50m);
+        }
 
         switch (status)
         {

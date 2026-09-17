@@ -2,6 +2,7 @@ using FluentValidation;
 using OpenCampus.SharedKernel;
 using OpenCampus.Sis.Application.Abstractions;
 using OpenCampus.Sis.Application.Enrolments;
+using OpenCampus.Sis.Application.Grading;
 using OpenCampus.Sis.Application.Programmes;
 using OpenCampus.Sis.Application.Sections;
 using OpenCampus.Sis.Domain.Learners;
@@ -76,7 +77,8 @@ public sealed class LearnerSelfService(
     IEnrolmentRepository enrolments,
     IUserDirectory users,
     ICurrentUser currentUser,
-    EnrolmentService enrolmentService)
+    EnrolmentService enrolmentService,
+    GradingService gradingService)
 {
     public async Task<PagedResponse<CatalogueEntry>> BrowseAsync(CatalogueQuery query, CancellationToken cancellationToken)
     {
@@ -161,6 +163,24 @@ public sealed class LearnerSelfService(
         return learner is null
             ? Result.Failure<TranscriptResponse>(SisErrors.NoLearnerRecordForCaller)
             : Result.Success(await enrolmentService.BuildTranscriptAsync(learner, cancellationToken));
+    }
+
+    /// <summary>Released grade retrieval (15.3): the caller's own enrolment only (SEC-12), released entries only (BR-06).</summary>
+    public async Task<Result<LearnerResultsResponse>> MyResultsAsync(Guid enrolmentId, CancellationToken cancellationToken)
+    {
+        var learner = await CurrentLearnerAsync(cancellationToken);
+        if (learner is null)
+        {
+            return Result.Failure<LearnerResultsResponse>(SisErrors.NoLearnerRecordForCaller);
+        }
+
+        var enrolment = await enrolments.FindByIdAsync(enrolmentId, cancellationToken);
+        if (enrolment is null || enrolment.LearnerId != learner.Id)
+        {
+            return Result.Failure<LearnerResultsResponse>(SisErrors.EnrolmentNotFound);
+        }
+
+        return Result.Success(await gradingService.BuildLearnerResultsAsync(enrolment, cancellationToken));
     }
 
     private Task<Learner?> CurrentLearnerAsync(CancellationToken cancellationToken) =>

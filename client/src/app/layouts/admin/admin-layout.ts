@@ -17,7 +17,8 @@ interface AdminLink {
   template: `
     <div class="row g-4">
       <nav class="col-12 col-md-3 col-lg-2" [attr.aria-label]="'shell.admin' | t">
-        <h1 class="h5">{{ 'shell.admin' | t }}</h1>
+        <h1 class="h5 mb-0">{{ 'shell.admin' | t }}</h1>
+        <span class="oc-horizon" aria-hidden="true"></span>
         <ul class="nav nav-pills flex-column">
           @for (link of links; track link.path) {
             @if (session.hasPermission(link.permission)) {

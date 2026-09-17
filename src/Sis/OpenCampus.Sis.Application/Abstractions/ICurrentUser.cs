@@ -4,4 +4,7 @@ namespace OpenCampus.Sis.Application.Abstractions;
 public interface ICurrentUser
 {
     Guid? UserId { get; }
+
+    /// <summary>Whether the caller holds the given Appendix C permission code; the host answers from the validated token.</summary>
+    bool HasPermission(string permissionCode);
 }

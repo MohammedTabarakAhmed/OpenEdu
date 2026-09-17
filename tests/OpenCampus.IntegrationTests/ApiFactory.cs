@@ -16,10 +16,18 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     private static readonly string ConnectionString =
         Environment.GetEnvironmentVariable("OPENCAMPUS_TEST_CONNECTION") ?? DefaultConnectionString;
 
+    /// <summary>The file store root of this run: isolated from the host's data directory and removed afterwards (TST-01/02).</summary>
+    public string FileStoreRoot { get; } = Path.Combine(Path.GetTempPath(), "opencampus-tests", "files-" + Guid.NewGuid().ToString("N"));
+
+    /// <summary>Upload bound of the test host (SEC-22); small so limit tests stay cheap.</summary>
+    public const long MaxUploadSizeBytes = 64 * 1024;
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Test");
         builder.UseSetting("ConnectionStrings:OpenCampus", ConnectionString);
+        builder.UseSetting("Storage:RootPath", FileStoreRoot);
+        builder.UseSetting("Storage:MaxUploadSizeBytes", MaxUploadSizeBytes.ToString());
 
         // Test-only tuning: the shared host must not rate-limit the suite (a dedicated host covers SEC-16),
         // and the PBKDF2 floor keeps credential-heavy tests fast while remaining a valid configuration.
@@ -50,6 +58,11 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     {
         using var scope = Services.CreateScope();
         await scope.ServiceProvider.GetRequiredService<IdentityDbContext>().Database.EnsureDeletedAsync();
+        if (Directory.Exists(FileStoreRoot))
+        {
+            Directory.Delete(FileStoreRoot, recursive: true);
+        }
+
         await base.DisposeAsync();
     }
 }

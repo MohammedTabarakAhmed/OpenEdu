@@ -1,0 +1,161 @@
+@if (loading()) {
+  <p class="text-secondary" role="status" data-testid="state-loading">{{ 'common.loading' | t }}</p>
+} @else if (loadError(); as e) {
+  @if (e.status === 404) {
+    <div class="alert alert-info" role="status" data-testid="content-not-found">{{ 'content.notFound' | t }}</div>
+  } @else {
+    <div class="alert alert-danger" role="alert" data-testid="state-error">{{ 'common.loadFailed' | t }}</div>
+  }
+} @else if (content(); as c) {
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+      <h2 class="h5 m-0" data-testid="section-title"><code>{{ c.section.courseCode }}</code> {{ c.section | bilingual: 'courseName' }}</h2>
+      <p class="small text-secondary m-0">{{ c.section.code }} · {{ c.section.termName }} · {{ 'sections.status.' + c.section.status | t }}</p>
+    </div>
+    @if (canManage()) {
+      <span class="badge text-bg-primary" data-testid="manage-badge">{{ 'content.managing' | t }}</span>
+    }
+  </div>
+
+  <app-submit-error [error]="error()" />
+  @if (notice(); as n) {
+    <p class="text-success small" role="status" data-testid="notice">{{ n | t }}</p>
+  }
+
+  @if (isEmpty()) {
+    <p class="text-secondary" data-testid="state-empty">{{ 'content.empty' | t }}</p>
+  }
+
+  @for (unit of c.contents; track unit.id) {
+    <section class="card mb-3" [attr.data-testid]="'unit-' + unit.id">
+      <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <h3 class="h6 m-0">{{ unit | bilingual: 'title' }}</h3>
+        @if (canManage()) {
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary btn-sm" type="button" (click)="openAddItem(unit)" [disabled]="busy()" [attr.data-testid]="'add-item-' + unit.id">{{ 'content.addItem' | t }}</button>
+            <button class="btn btn-outline-danger btn-sm" type="button" (click)="deleteUnit(unit)" [disabled]="busy()" [attr.data-testid]="'delete-unit-' + unit.id">{{ 'common.delete' | t }}</button>
+          </div>
+        }
+      </div>
+
+      @if (addingItemTo() === unit.id) {
+        <form class="card-body border-bottom" [formGroup]="itemForm" (ngSubmit)="addItem(unit)" novalidate data-testid="item-form">
+          <div class="row g-2">
+            <div class="col-md-4">
+              <label class="form-label" for="item-title-en">{{ 'content.titleEn' | t }}</label>
+              <input class="form-control form-control-sm" id="item-title-en" formControlName="titleEn" [class.is-invalid]="fieldErrors('titleEn').length > 0" aria-describedby="item-title-en-errors" />
+              <app-field-errors id="item-title-en-errors" [messages]="fieldErrors('titleEn')" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="item-title-ar">{{ 'content.titleAr' | t }}</label>
+              <input class="form-control form-control-sm" id="item-title-ar" formControlName="titleAr" dir="rtl" [class.is-invalid]="fieldErrors('titleAr').length > 0" aria-describedby="item-title-ar-errors" />
+              <app-field-errors id="item-title-ar-errors" [messages]="fieldErrors('titleAr')" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="item-type">{{ 'content.type' | t }}</label>
+              <select class="form-select form-select-sm" id="item-type" formControlName="itemType">
+                @for (type of itemTypes; track type) {
+                  <option [value]="type">{{ 'content.type.' + type | t }}</option>
+                }
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="item-body">{{ 'content.body.' + itemForm.controls.itemType.value | t }}</label>
+              @if (itemForm.controls.itemType.value === 'Page') {
+                <textarea class="form-control form-control-sm" id="item-body" rows="4" formControlName="body" [class.is-invalid]="fieldErrors('body').length > 0" aria-describedby="item-body-errors"></textarea>
+              } @else {
+                <input class="form-control form-control-sm" id="item-body" formControlName="body" [class.is-invalid]="fieldErrors('body').length > 0" aria-describedby="item-body-errors" />
+              }
+              <app-field-errors id="item-body-errors" [messages]="fieldErrors('body')" />
+            </div>
+          </div>
+          <div class="d-flex gap-2 mt-2">
+            <button class="btn btn-primary btn-sm" type="submit" [disabled]="busy()" data-testid="item-submit">{{ 'common.save' | t }}</button>
+            <button class="btn btn-outline-secondary btn-sm" type="button" (click)="addingItemTo.set(null)">{{ 'common.cancel' | t }}</button>
+          </div>
+        </form>
+      }
+
+      <ul class="list-group list-group-flush">
+        @for (item of unit.items; track item.id) {
+          <li class="list-group-item" [attr.data-testid]="'item-' + item.id">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+              <div class="flex-grow-1">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge text-bg-light border">{{ 'content.type.' + item.itemType | t }}</span>
+                  <strong>{{ item | bilingual: 'title' }}</strong>
+                  @if (canManage()) {
+                    <span class="badge" [class]="'badge text-bg-' + (item.isPublished ? 'success' : 'secondary')" [attr.data-testid]="'published-' + item.id">
+                      {{ (item.isPublished ? 'content.published' : 'content.draft') | t }}
+                    </span>
+                  }
+                </div>
+                @switch (item.itemType) {
+                  @case ('Page') {
+                    <p class="mb-0 mt-1" style="white-space: pre-wrap">{{ item.body }}</p>
+                  }
+                  @case ('Link') {
+                    <a class="d-inline-block mt-1" [href]="item.body" target="_blank" rel="noopener noreferrer">{{ item.body }}</a>
+                  }
+                  @case ('File') {
+                    @if (item.body) { <p class="mb-1 mt-1">{{ item.body }}</p> }
+                    <ul class="list-unstyled mb-0 mt-1">
+                      @for (resource of item.resources; track resource.id) {
+                        <li class="d-flex align-items-center gap-2">
+                          <button class="btn btn-link btn-sm p-0" type="button" (click)="download(resource.id, resource.fileName)" [attr.data-testid]="'download-' + resource.id">{{ resource.fileName }}</button>
+                          <span class="small text-secondary">{{ formatSize(resource.sizeBytes) }}</span>
+                          @if (canManage()) {
+                            <button class="btn btn-link btn-sm text-danger p-0" type="button" (click)="removeResource(unit, item, resource.id)" [disabled]="busy()" [attr.data-testid]="'remove-resource-' + resource.id">{{ 'common.remove' | t }}</button>
+                          }
+                        </li>
+                      }
+                    </ul>
+                    @if (canManage()) {
+                      <label class="form-label small mt-2 mb-0" [for]="'upload-' + item.id">{{ 'content.upload' | t }}</label>
+                      <input class="form-control form-control-sm" type="file" [id]="'upload-' + item.id" (change)="upload(unit, item, $event)" [disabled]="busy()" [attr.data-testid]="'upload-' + item.id" />
+                      @if (uploadingTo() === item.id) { <span class="small text-secondary" role="status">{{ 'content.uploading' | t }}</span> }
+                      <app-field-errors [messages]="fieldErrors('file')" />
+                    }
+                  }
+                }
+              </div>
+              @if (canManage()) {
+                <div class="d-flex gap-2">
+                  <button class="btn btn-sm" [class]="'btn btn-sm ' + (item.isPublished ? 'btn-outline-secondary' : 'btn-success')" type="button" (click)="togglePublish(unit, item)" [disabled]="busy()" [attr.data-testid]="'publish-' + item.id">
+                    {{ (item.isPublished ? 'content.unpublish' : 'content.publish') | t }}
+                  </button>
+                  <button class="btn btn-outline-danger btn-sm" type="button" (click)="removeItem(unit, item)" [disabled]="busy()" [attr.data-testid]="'remove-item-' + item.id">{{ 'common.remove' | t }}</button>
+                </div>
+              }
+            </div>
+          </li>
+        } @empty {
+          <li class="list-group-item text-secondary small">{{ 'content.noItems' | t }}</li>
+        }
+      </ul>
+    </section>
+  }
+
+  @if (canManage()) {
+    <form class="card" [formGroup]="unitForm" (ngSubmit)="createUnit()" novalidate data-testid="unit-form">
+      <div class="card-body">
+        <h3 class="h6">{{ 'content.addUnit' | t }}</h3>
+        <div class="row g-2">
+          <div class="col-md-5">
+            <label class="form-label" for="unit-title-en">{{ 'content.titleEn' | t }}</label>
+            <input class="form-control form-control-sm" id="unit-title-en" formControlName="titleEn" [class.is-invalid]="fieldErrors('titleEn').length > 0" aria-describedby="unit-title-en-errors" />
+            <app-field-errors id="unit-title-en-errors" [messages]="fieldErrors('titleEn')" />
+          </div>
+          <div class="col-md-5">
+            <label class="form-label" for="unit-title-ar">{{ 'content.titleAr' | t }}</label>
+            <input class="form-control form-control-sm" id="unit-title-ar" formControlName="titleAr" dir="rtl" [class.is-invalid]="fieldErrors('titleAr').length > 0" aria-describedby="unit-title-ar-errors" />
+            <app-field-errors id="unit-title-ar-errors" [messages]="fieldErrors('titleAr')" />
+          </div>
+          <div class="col-md-2 d-flex align-items-end">
+            <button class="btn btn-primary btn-sm w-100" type="submit" [disabled]="busy()" data-testid="unit-submit">{{ 'content.addUnit' | t }}</button>
+          </div>
+        </div>
+      </div>
+    </form>
+  }
+}

@@ -1,6 +1,6 @@
 <nav class="navbar navbar-expand bg-body-tertiary border-bottom">
   <div class="container-fluid">
-    <a class="navbar-brand" routerLink="/">{{ 'app.title' | t }}</a>
+    <a class="navbar-brand oc-brand" routerLink="/"><app-mark /> {{ 'app.title' | t }}</a>
     <!-- 17.3: only functions available to the user are presented. -->
     <ul class="navbar-nav me-auto">
       @if (session.hasAnyRole([roles.Administrator, roles.Registrar])) {

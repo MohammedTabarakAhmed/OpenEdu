@@ -14,6 +14,18 @@ public static class BusinessRules
     public static BusinessRuleViolationException Br03SectionNotOpen() =>
         new("BR-03", "Enrolment refused: the section is not open for enrolment.");
 
+    public static BusinessRuleViolationException Br04WeightingsNotComplete(decimal total) =>
+        new("BR-04", $"The section cannot be opened: its grade component weightings total {total} percent, not 100.");
+
+    public static BusinessRuleViolationException Br05ScoreOutOfRange(decimal maxScore) =>
+        new("BR-05", $"The score must be between 0 and the component maximum of {maxScore}.");
+
+    public static BusinessRuleViolationException Br06GradesNotReleased() =>
+        new("BR-06", "Grade entries are not visible until they are released for the section.");
+
+    public static BusinessRuleViolationException Br07UngradedComponents() =>
+        new("BR-07", "Grades cannot be released while a component remains ungraded for an active enrolment.");
+
     public static BusinessRuleViolationException Br14SectionHasEnrolments() =>
         new("BR-14", "The section cannot be deleted while enrolments exist against it.");
 

@@ -101,7 +101,30 @@ public interface IEnrolmentRepository
 
     Task<PagedResponse<Enrolment>> ListAsync(EnrolmentQuery query, CancellationToken cancellationToken);
 
+    /// <summary>Every active (Active or At Risk) enrolment of a section, for grading and release. Bounded by the section capacity.</summary>
+    Task<IReadOnlyList<Enrolment>> ListActiveInSectionAsync(Guid sectionId, CancellationToken cancellationToken);
+
+    /// <summary>Every enrolment of a section that belongs in its gradebook: active ones and completed ones, not withdrawn.</summary>
+    Task<IReadOnlyList<Enrolment>> ListGradableInSectionAsync(Guid sectionId, CancellationToken cancellationToken);
+
+    /// <summary>The enrolment, whatever its status, of the learner linked to the given user in the section — the cross-module lookup the LMS needs.</summary>
+    Task<Enrolment?> FindByUserAndSectionAsync(Guid userId, Guid sectionId, CancellationToken cancellationToken);
+
     void Add(Enrolment enrolment);
+}
+
+public interface IGradeEntryRepository
+{
+    Task<GradeEntry?> FindByIdAsync(Guid id, CancellationToken cancellationToken);
+
+    Task<GradeEntry?> FindByEnrolmentAndComponentAsync(Guid enrolmentId, Guid gradeComponentId, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<GradeEntry>> ListByEnrolmentAsync(Guid enrolmentId, CancellationToken cancellationToken);
+
+    /// <summary>All entries against the section's enrolments in one query (gradebook, BR-07, release).</summary>
+    Task<IReadOnlyList<GradeEntry>> ListBySectionAsync(Guid sectionId, CancellationToken cancellationToken);
+
+    void Add(GradeEntry entry);
 }
 
 public sealed record EnrolmentQuery(int Page, int PageSize, Guid? LearnerId, Guid? SectionId, EnrolmentStatus? Status, bool? ActiveOnly);

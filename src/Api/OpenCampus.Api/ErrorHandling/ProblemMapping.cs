@@ -43,6 +43,25 @@ public static class ProblemMapping
         };
     }
 
+    /// <summary>API-04 for framework model-binding failures: field-keyed detail in the validation problem shape (18.2).</summary>
+    public static IActionResult ToInvalidModelStateResult(ActionContext context)
+    {
+        var errors = context.ModelState
+            .Where(e => e.Value?.Errors.Count > 0)
+            .ToDictionary(
+                e => string.IsNullOrEmpty(e.Key) ? "Request" : e.Key,
+                e => e.Value!.Errors.Select(x => string.IsNullOrEmpty(x.ErrorMessage) ? "The value is invalid." : x.ErrorMessage).ToArray());
+
+        return new BadRequestObjectResult(new ValidationProblemDetails(errors)
+        {
+            Type = "urn:opencampus:error:validation",
+            Title = "validation",
+            Status = StatusCodes.Status400BadRequest,
+            Detail = "The request could not be read.",
+            Instance = context.HttpContext.Request.Path,
+        });
+    }
+
     public static ActionResult ToActionResult(this Result result, ControllerBase controller)
     {
         return result.IsSuccess

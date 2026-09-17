@@ -71,7 +71,22 @@ internal static class SisTestSupport
             return section;
         }
 
-        return await ReadAsync<SectionDetailResponse>(await admin.PostAsync($"/api/v1/sections/{section.Section.Id}/open", null));
+        return await OpenSectionAsync(admin, section.Section.Id);
+    }
+
+    /// <summary>Completes the grade scheme (BR-04) if needed, then opens the section.</summary>
+    public static async Task<SectionDetailResponse> OpenSectionAsync(HttpClient admin, Guid sectionId)
+    {
+        var current = await ReadAsync<SectionDetailResponse>(await admin.GetAsync($"/api/v1/sections/{sectionId}"));
+        if (current.TotalWeightPercent < 100m)
+        {
+            await ReadAsync<GradeComponentResponse>(
+                await admin.PostAsJsonAsync($"/api/v1/sections/{sectionId}/grade-components",
+                    new GradeComponentRequest("Assessment", "تقييم", 100m - current.TotalWeightPercent, 100m), Json),
+                HttpStatusCode.Created);
+        }
+
+        return await ReadAsync<SectionDetailResponse>(await admin.PostAsync($"/api/v1/sections/{sectionId}/open", null));
     }
 
     /// <summary>Seeds a Learner-role account and creates its learner record.</summary>

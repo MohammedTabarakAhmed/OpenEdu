@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using OpenCampus.Sis.Application.Catalogue;
 using OpenCampus.Sis.Application.Courses;
 using OpenCampus.Sis.Application.Enrolments;
+using OpenCampus.Sis.Application.Grading;
 using OpenCampus.Sis.Application.Learners;
 using OpenCampus.Sis.Application.Programmes;
 using OpenCampus.Sis.Application.Provisioning;
@@ -20,6 +21,8 @@ public static class DependencyInjection
         services.AddScoped<LearnerService>();
         services.AddScoped<EnrolmentService>();
         services.AddScoped<LearnerSelfService>();
+        services.AddScoped<EnrolmentStandingService>();
+        services.AddScoped<GradingService>();
         services.AddScoped<SisProvisioner>();
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly, includeInternalTypes: true);
 

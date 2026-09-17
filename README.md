@@ -28,7 +28,8 @@ npm --prefix client start                         # serves http://localhost:4200
 
 Open `http://localhost:4200` and sign in. On first run in `Development` or `Demonstration` the host provisions the
 reference data (roles, permission catalogue), the demonstration identities and the demonstration academic structure
-(4 programmes, 12 courses, 12 sections with sessions and grade schemes, 40 learner records, ~126 enrolments), and — because no credential may be
+(4 programmes, 12 courses, 12 sections with sessions and grade schemes, 40 learner records, ~126 enrolments) and the demonstration
+course content (three units per live section with published pages, links and a file resource, plus one unpublished draft), and — because no credential may be
 held in source (section 9.2) — generates the initial passwords and writes them to
 `src/Api/OpenCampus.Api/data/provisioning/credentials.txt` (excluded from source control; the log records only the path).
 To choose the passwords instead, set `Provisioning__AdministratorPassword` and `Provisioning__DemonstrationPassword`
@@ -115,6 +116,16 @@ One SQL Server database holds one schema per module, each with its own `__EFMigr
 | Host | `ProgrammesController`, `CoursesController`, `SectionsController`, `LearnersController`, `EnrolmentsController`, `CatalogueController`, `MyEnrolmentsController`; `IdentityUserDirectory` (host-side implementation of the SIS→Identity contract, MB-05); rule violations → 422 with the rule reference |
 | Client | `features/admin` (programmes, courses, sections and section detail, learners and learner detail, users), `features/learner` (catalogue, my enrolments), `shared` (paged collection state, page controls, field errors, confirmation, locale date and bilingual pipes) |
 
+### LMS module (Increment 4)
+
+| Layer | Contents |
+|---|---|
+| Domain | `CourseContent` (aggregate owning `ContentItem` and, through it, `Resource`; BR-15 via `ItemsVisibleToLearners` / `FindItemForLearner` / `EnsureVisibleToLearner`; item types Page, Link, File as the 13.6 reference set), `Assignment`, `Submission`, `AttendanceRecord` (+ `AttendanceStatus`), `Announcement` (schema only until later increments), `BusinessRules` |
+| Application | `ContentService` (hierarchy, items, publication, upload, removal), `ResourceService` (authorised download), `LearnerContentService`, `SectionScopeResolver` (SEC-12: Manager / EnrolledLearner / None per section), `ISectionAccess` (contract to SIS, MB-02), `ICurrentUser` (with `HasPermission`), `IFileStore` + `StorageOptions` (18.5, Appendix B "Storage"), `LmsErrors`, `KnownPermissions`, contracts with one validator each (18.2), `LmsProvisioner` (DEP-11) |
+| Infrastructure | `LmsDbContext` (actor stamping, logical-deletion filter), entity configurations with the 13.4 indexes, `CourseContentRepository` (aggregate loaded in one split query; logical removal of the hierarchy), `LocalFileStore` (owner-derived layout, generated names, SHA-256 while writing, size bound during the write, path-escape refusal), migration `LmsEntities` |
+| Host | `ContentController` (`api/v1/sections/{id}/content`, `api/v1/content/…`), `ResourcesController` (`api/v1/resources/{id}/download`), `MySectionsController` (`api/v1/me/sections/teaching` / `enrolled`); `SisSectionAccess` (host-side implementation of the LMS→SIS contract, MB-05); framework-level multipart and request-body limits from `Storage:MaxUploadSizeBytes`; no static-file middleware (SEC-24) |
+| Client | `features/content` (`SectionContentPage` for both shells, `MySectionsPage`, `ContentApi`, `BlobSaver`), `features/instructor` routes, learner "My courses" routes; `shared/brand` (mark) and the token-based theme in `styles.scss` |
+
 ### Configuration (Appendix B)
 
 | Section | Keys | Notes |
@@ -124,6 +135,7 @@ One SQL Server database holds one schema per module, each with its own `__EFMigr
 | `Tokens` | `Issuer`, `Audience`, `AccessTokenLifetime` (≤ 15 min, SEC-03), `RefreshTokenLifetime` (≤ 14 days, SEC-05), `SigningKeyPath` (RSA PEM, created on first run, SEC-04), `MfaChallengeLifetime` | Validated at startup; an out-of-range value stops the host |
 | `AccountProtection` | `LockoutThreshold`, `LockoutDuration` (SEC-14), `RateLimitWindow`, `RateLimitPermittedRequests` (SEC-16) | |
 | `PasswordHashing` | `Iterations` (≥ 100 000; default 600 000) | Persisted with each hash so it can be raised later (SEC-01) |
+| `Storage` | `RootPath` (relative to the content root or absolute; `data/files` by default, git-ignored, never served statically), `MaxUploadSizeBytes` (enforced by the framework body limits and again while writing), `PermittedExtensions` (allow-list, `.ext` form, case-insensitive) | Validated at startup (SEC-22, SEC-24, 18.5) |
 | `Provisioning` | `ReferenceDataEnabled`, `DemonstrationDataEnabled`, `AdministratorUserName`, `AdministratorEmail`, `AdministratorPassword`, `DemonstrationPassword`, `CredentialsFilePath` | Passwords are optional and are generated when absent |
 | `Serilog` | Minimum level, sinks, retention | |
 
@@ -160,6 +172,13 @@ One SQL Server database holds one schema per module, each with its own `__EFMigr
 | 27 | BR-16 (instructor session overlap) is implemented in Increment 3; BR-04 (weightings total 100 to Open) is not | Section 19 assigns scheduled session management to Increment 3 and BR-04 to Increment 5. Building session scheduling without its governing rule would leave a known-invalid state reachable; opening a section without a complete scheme is the state Increment 5 closes. |
 | 28 | `NationalId` is returned only by single-learner retrieval, never in collection responses | 18.1 forbids logging national identifiers; keeping them out of paged listings limits their spread to the screen that needs them. |
 | 29 | Cross-module references and logical deletion (13.5): a deactivated instructor or learner account keeps its identifier on `CourseSection.InstructorUserId` / `Learner.UserId` | Records retain their history; display resolves through `IUserDirectory` and shows the account as inactive (or unresolved if absent). New references to inactive accounts are refused at creation with a field-keyed 400. |
+| 30 | The LMS→SIS contract (`ISectionAccess`) is declared in `Lms.Application` and implemented in the host (`SisSectionAccess`) over SIS repositories | Same reasoning as decision 23: the section 12 table gives no module a reference to another's application layer (MB-04), so the host is the only place the adapter can live (MB-05). It is the sole source of "is this user the assigned instructor?" and "does this user hold an active enrolment?" — the two facts SEC-12 needs — and is consulted on every request, never cached (18.4 forbids caching authorisation-relevant data). |
+| 31 | Resource-level authorisation (SEC-12) is resolved per section into one of three scopes — Manager (assigned instructor, or holder of `sis.section.write`), EnrolledLearner, None — before any LMS data is touched; None is reported as 404 | A permission code grants capability, not scope (Appendix C). Routing the check through one resolver keeps every controller action on the same rule and lets unit tests prove the matrix without a database. 404 rather than 403 follows API-06: an outsider must not learn that a section has content. |
+| 32 | Administrators manage content through the SIS capability `sis.section.write`, restated verbatim in `Lms.Application.KnownPermissions` | The LMS cannot reference the Identity permission catalogue (MB-04). "May administer sections" is the natural authority over a section's content; using an existing code avoids inventing one outside Appendix C. |
+| 33 | BR-15 is enforced by filtering (learner views contain published items only) and, for a direct request, by answering 404 rather than 422 | 18.3 maps "not visible" to 404 and API-06 forbids disclosing existence; a 422 titled `BR-15` would confirm that an unpublished item exists. The aggregate still exposes `EnsureVisibleToLearner` (throws BR-15) so the rule has a unit-level refusal test (TST-03). |
+| 34 | Content item types are the fixed enumeration Page, Link, File | 13.6 lists "content item types" as reference data without enumerating them; these three cover text, external and file-backed content. As with decision 24 they are stored by name and need no lookup table. A Link body must be an absolute `http(s)` address so no `javascript:` or `data:` scheme can be published (SEC-20). |
+| 35 | Stored files are laid out as `content/{sectionId}/{itemId}/{guid}.{ext}` under `Storage:RootPath`; the database keeps the relative path, size, content type and SHA-256; the client name is kept for display only | 18.5 (deterministic hierarchy from the owning identifiers, relative path only, storage abstraction in the application layer), SEC-23 (system-generated names; the display name is reduced to its leaf so a hostile `..\..\x.pdf` cannot influence the path) and SEC-26 (hash recorded, returned as `X-Content-SHA256` on download). Files are deleted only after the database commit that removes their record, and an uncommitted upload deletes its file, so neither orphans nor dangling records arise. |
+| 36 | The client is themed through Bootstrap's CSS custom properties from six neutral tokens in the single global stylesheet, with IBM Plex Sans / IBM Plex Sans Arabic self-hosted | 17.1 requires component-scoped styling with global overrides minimised and justified: mapping tokens onto `--bs-*` variables re-themes every component without per-component rules. Self-hosting the fonts keeps every asset same-origin (no third-party stylesheet or font request; simpler CSP under SEC-28) and makes the Arabic face available offline. |
 
 ## Anonymous endpoints (section 15.4)
 
@@ -175,6 +194,21 @@ The endpoints below are the only ones marked `[AllowAnonymous]`; the first three
 | `GET /openapi/v1.json` | Machine-readable interface description (API-08). **Development environment only**; not mapped in any other environment. |
 
 Certificate verification (section 15.4) is added in Increment 6.
+
+### Interface summary (Increment 4)
+
+| Route | Policy | Purpose |
+|---|---|---|
+| `GET api/v1/sections/{id}/content` | `lms.content.read` | The section's content hierarchy in the caller's scope (SEC-12): every item for managers, published items only for enrolled learners (BR-15); 404 otherwise |
+| `POST api/v1/sections/{id}/content` | `lms.content.write` | New content unit (managers only) |
+| `GET/PUT/DELETE api/v1/content/{id}` | `lms.content.read` / `lms.content.write` | Content unit retrieval, amendment, logical deletion (stored files removed after the commit) |
+| `POST api/v1/content/{id}/items` · `PUT/DELETE {itemId}` · `PUT items/reorder` | `lms.content.write` | Content item management |
+| `POST api/v1/content/{id}/items/{itemId}/publish` · `/unpublish` | `lms.content.publish` | Publication (422 for a file item without a resource) |
+| `POST api/v1/content/{id}/items/{itemId}/resources` (multipart `file`) | `lms.content.write` | Resource upload (SEC-22 allow-list and size, field-keyed 400; SEC-23 generated name; SEC-26 hash); 201 with `Location` of the download |
+| `DELETE api/v1/content/{id}/items/{itemId}/resources/{resourceId}` | `lms.content.write` | Resource removal (file deleted after the commit) |
+| `GET api/v1/resources/{id}/download` | `lms.content.read` | Authorised download (SEC-25): entitlement verified before streaming; `Content-Disposition` carries the display name; `X-Content-SHA256` the digest; 404 outside the caller's scope or for an unpublished item requested by a learner |
+| `GET api/v1/me/sections/teaching` | `lms.content.write` | Sections assigned to the caller as instructor |
+| `GET api/v1/me/sections/enrolled` | `lms.content.read` | Sections in which the caller holds an active enrolment |
 
 ### Interface summary (Increment 3)
 
@@ -211,11 +245,12 @@ Certificate verification (section 15.4) is added in Increment 6.
 
 ## Delivery status
 
-Increment 1 — Foundation: complete. Increment 2 — Identity: complete. Increment 3 — Academic structure: complete
-(section 13.3 entities; catalogue and enrolment capabilities; BR-01 to BR-03, BR-14 and BR-16; administrative interface
-and learner catalogue; user-administration screens). See `ACCEPTANCE.md` for the step log and `DEPENDENCIES.md` for the
-dependency register (DEL-04).
+Increment 1 — Foundation: complete. Increment 2 — Identity: complete. Increment 3 — Academic structure: complete.
+Increment 4 — Content delivery: complete (section 13.4 entities; content management and resource handling; section 16.5
+in full; SEC-12 resource-level authorisation for instructors and learners over the LMS→SIS contract; BR-15; instructor
+and learner interfaces; visual identity). See `ACCEPTANCE.md` for the step log and `DEPENDENCIES.md` for the dependency
+register (DEL-04).
 
-Carried forward to later increments: SEC-12 resource-level authorisation handlers for instructors (Increments 4–5), BR-04
-(Increment 5), 16.5 file handling (Increment 4), 18.4 reference-data caching (with the first cacheable read path),
-16.6 transport headers and the security test report (Increment 6), full localisation coverage per 17.4 (Increment 6).
+Carried forward to later increments: BR-04 and the assessment SEC-12 cases (Increment 5), announcements (mandatory scope
+not assigned to an increment by section 19; schema delivered), 18.4 reference-data caching (with the first cacheable read
+path), 16.6 transport headers and the security test report (Increment 6), full localisation coverage per 17.4 (Increment 6).

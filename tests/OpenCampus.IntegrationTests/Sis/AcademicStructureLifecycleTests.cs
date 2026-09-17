@@ -155,7 +155,7 @@ public class AcademicStructureLifecycleTests(ApiFactory factory)
 
         await (await EnrolAsync(admin, learner.Id, draft.Section.Id)).ShouldBeRuleViolationAsync("BR-03");
 
-        await ReadAsync<SectionDetailResponse>(await admin.PostAsync($"/api/v1/sections/{draft.Section.Id}/open", null));
+        await OpenSectionAsync(admin, draft.Section.Id);
         await ReadAsync<SectionDetailResponse>(await admin.PostAsync($"/api/v1/sections/{draft.Section.Id}/close", null));
 
         await (await EnrolAsync(admin, learner.Id, draft.Section.Id)).ShouldBeRuleViolationAsync("BR-03");

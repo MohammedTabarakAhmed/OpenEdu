@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using OpenCampus.Identity.Application.Provisioning;
 using OpenCampus.Identity.Infrastructure.Persistence;
+using OpenCampus.Lms.Application.Provisioning;
 using OpenCampus.Lms.Infrastructure.Persistence;
 using OpenCampus.Sis.Application.Provisioning;
 using OpenCampus.Sis.Infrastructure.Persistence;
@@ -31,6 +32,9 @@ public static class DatabaseInitializer
 
         // SIS after Identity: its instructor and learner references resolve through the Identity contract (13.5).
         await scope.ServiceProvider.GetRequiredService<SisProvisioner>().RunAsync(cancellationToken);
+
+        // LMS after SIS: content is provisioned against the demonstration sections through the LMS→SIS contract.
+        await scope.ServiceProvider.GetRequiredService<LmsProvisioner>().RunAsync(cancellationToken);
 
         if (generated.Count == 0)
         {
