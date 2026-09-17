@@ -1,7 +1,7 @@
-import { formatDate } from '@angular/common';
+import { formatDate, formatNumber, formatPercent } from '@angular/common';
 import { Component, inject, Injectable, input, output, Pipe, PipeTransform } from '@angular/core';
 import { PresentableError } from '../core/api/problem';
-import { I18nService, TranslatePipe } from '../core/i18n/i18n.service';
+import { I18nService, Language, TranslatePipe } from '../core/i18n/i18n.service';
 import { ResourceKey } from '../core/i18n/resources';
 import { PageState } from './page-state';
 
@@ -29,6 +29,35 @@ export class LocaleDatePipe implements PipeTransform {
   }
 }
 
+/**
+ * UI-09: numbers formatted according to the active locale (grades, scores, weights, counts, sizes).
+ * `percent` takes a 0–100 value and renders it with the locale's percent sign and placement;
+ * the second argument caps the fraction digits (integers are never padded).
+ */
+@Pipe({ name: 'localeNumber', pure: false })
+export class LocaleNumberPipe implements PipeTransform {
+  private readonly i18n = inject(I18nService);
+
+  transform(value: number | null | undefined, style: 'number' | 'percent' = 'number', maxFractionDigits = 2): string {
+    return formatLocaleNumber(this.i18n.language(), value, style, maxFractionDigits);
+  }
+}
+
+/** The pipe's formatting as a plain function, for component code that composes a number with a unit. */
+export function formatLocaleNumber(
+  language: Language,
+  value: number | null | undefined,
+  style: 'number' | 'percent' = 'number',
+  maxFractionDigits = 2,
+): string {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return '';
+  }
+  const locale = language === 'ar' ? 'ar' : 'en-GB';
+  const digits = `1.0-${maxFractionDigits}`;
+  return style === 'percent' ? formatPercent(value / 100, locale, digits) : formatNumber(value, locale, digits);
+}
+
 /** Picks the English or Arabic value of a bilingual pair for the active language. */
 @Pipe({ name: 'bilingual', pure: false })
 export class BilingualPipe implements PipeTransform {
@@ -48,7 +77,7 @@ export class BilingualPipe implements PipeTransform {
 /** Loading, empty and error states of a collection view (17.5), plus previous/next paging controls. */
 @Component({
   selector: 'app-page-controls',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, LocaleNumberPipe],
   template: `
     @if (state().loading()) {
       <p class="text-secondary" role="status" data-testid="state-loading">{{ 'common.loading' | t }}</p>
@@ -64,7 +93,7 @@ export class BilingualPipe implements PipeTransform {
         <button class="btn btn-outline-secondary btn-sm" type="button" (click)="state().previous()" [disabled]="state().page() <= 1 || state().loading()" data-testid="page-previous">
           {{ 'common.previous' | t }}
         </button>
-        <span class="small" data-testid="page-indicator">{{ state().page() }} / {{ state().totalPages() }} ({{ state().totalCount() }})</span>
+        <span class="small" data-testid="page-indicator">{{ state().page() | localeNumber }} / {{ state().totalPages() | localeNumber }} ({{ state().totalCount() | localeNumber }})</span>
         <button class="btn btn-outline-secondary btn-sm" type="button" (click)="state().next()" [disabled]="state().page() >= state().totalPages() || state().loading()" data-testid="page-next">
           {{ 'common.next' | t }}
         </button>

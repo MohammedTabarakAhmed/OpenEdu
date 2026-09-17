@@ -1,0 +1,94 @@
+@if (loading()) {
+  <p class="text-secondary" role="status" data-testid="state-loading">{{ 'common.loading' | t }}</p>
+} @else if (loadError(); as e) {
+  @if (e.status === 404) {
+    <div class="alert alert-info" role="status" data-testid="state-not-found">{{ 'assessment.notFound' | t }}</div>
+  } @else {
+    <div class="alert alert-danger" role="alert" data-testid="state-error">{{ 'common.loadFailed' | t }}</div>
+  }
+} @else if (data(); as d) {
+  <div class="mb-3">
+    <h2 class="h5 m-0" data-testid="section-title"><code>{{ d.section.courseCode }}</code> {{ d.section | bilingual: 'courseName' }}</h2>
+    <p class="small text-secondary m-0">{{ d.section.code }} · {{ d.section.termName }}</p>
+  </div>
+
+  <ul class="nav nav-tabs mb-3" [attr.aria-label]="'assessment.nav' | t">
+    <li class="nav-item"><a class="nav-link" routerLink="../content" routerLinkActive="active" data-testid="tab-content">{{ 'assessment.tabContent' | t }}</a></li>
+    <li class="nav-item"><a class="nav-link" routerLink="../assignments" routerLinkActive="active" data-testid="tab-assignments">{{ 'assessment.tabAssignments' | t }}</a></li>
+    <li class="nav-item"><a class="nav-link" routerLink="." routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" data-testid="tab-attendance">{{ 'assessment.tabAttendance' | t }}</a></li>
+    @if (canManage()) {
+      <li class="nav-item"><a class="nav-link" routerLink="../grades" routerLinkActive="active" data-testid="tab-grades">{{ 'assessment.tabGrading' | t }}</a></li>
+    }
+  </ul>
+
+  <app-submit-error [error]="error()" />
+  @if (notice(); as n) {
+    <p class="text-success small" role="status" data-testid="notice">{{ n | t }}</p>
+  }
+
+  @if (d.sessions.length === 0) {
+    <p class="text-secondary" data-testid="state-empty">{{ 'assessment.noSessions' | t }}</p>
+  }
+
+  @if (canManage()) {
+    <div class="table-responsive mb-3">
+      <table class="table table-sm align-middle" data-testid="learner-summary-table">
+        <thead><tr><th scope="col">{{ 'assessment.learner' | t }}</th><th scope="col">{{ 'assessment.attendancePercent' | t }}</th></tr></thead>
+        <tbody>
+          @for (l of d.learners; track l.learnerUserId) {
+            <tr><td>{{ l.learnerUserId }}</td><td [attr.data-testid]="'percent-' + l.learnerUserId">{{ l.attendancePercent | localeNumber: 'percent' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <p class="small" data-testid="my-attendance">{{ 'assessment.myAttendance' | t }}: {{ (percentFor(d.learners[0]?.learnerUserId ?? '') | localeNumber: 'percent') || '—' }}</p>
+  }
+
+  <div class="list-group mb-3" data-testid="session-list">
+    @for (s of d.sessions; track s.id) {
+      <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" type="button" (click)="openSession(s.id)" [attr.data-testid]="'session-' + s.id">
+        <span>{{ s.scheduledStartUtc | localeDate: 'datetime' }} @if (s.location) { — {{ s.location }} }</span>
+        @if (!canManage()) {
+          <span class="badge text-bg-light border">{{ (statusFor(s.id) ? ('assessment.attendance.' + statusFor(s.id)) : 'assessment.notRecorded') | t }}</span>
+        }
+      </button>
+
+      @if (selectedSessionId() === s.id && register(); as r) {
+        <div class="card card-body mb-2" data-testid="register-panel">
+          @if (canManage()) {
+            <div class="table-responsive">
+              <table class="table table-sm align-middle">
+                <thead><tr><th scope="col">{{ 'assessment.learner' | t }}</th><th scope="col">{{ 'assessment.status' | t }}</th></tr></thead>
+                <tbody>
+                  @for (l of r.learners; track l.userId) {
+                    <tr [attr.data-testid]="'register-row-' + l.userId">
+                      <td>{{ l.learnerNumber }} — {{ l.fullNameEn }}</td>
+                      <td>
+                        <select class="form-select form-select-sm" [attr.data-testid]="'status-' + l.userId" (change)="setStatus(l.userId, $any($event.target).value)">
+                          <option value="">{{ 'assessment.notRecorded' | t }}</option>
+                          @for (status of statuses; track status) {
+                            <option [value]="status" [selected]="draft()[l.userId] === status">{{ 'assessment.attendance.' + status | t }}</option>
+                          }
+                        </select>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <button class="btn btn-primary btn-sm align-self-start" type="button" (click)="save()" [disabled]="busy()" data-testid="save-register">{{ 'common.save' | t }}</button>
+          } @else {
+            <ul class="list-unstyled mb-0">
+              @for (rec of r.records; track rec.learnerUserId) {
+                <li>{{ 'assessment.attendance.' + rec.status | t }}</li>
+              } @empty {
+                <li class="text-secondary small">{{ 'assessment.notRecorded' | t }}</li>
+              }
+            </ul>
+          }
+        </div>
+      }
+    }
+  </div>
+}

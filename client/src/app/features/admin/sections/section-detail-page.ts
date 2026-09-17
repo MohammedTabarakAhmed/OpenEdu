@@ -6,7 +6,7 @@ import { PresentableError, errorsFor, toPresentableError } from '../../../core/a
 import { SessionService } from '../../../core/auth/session.service';
 import { TranslatePipe } from '../../../core/i18n/i18n.service';
 import { PageState } from '../../../shared/page-state';
-import { BilingualPipe, ConfirmService, FieldErrors, LocaleDatePipe, PageControls, SubmitError } from '../../../shared/ui';
+import { BilingualPipe, ConfirmService, FieldErrors, LocaleDatePipe, LocaleNumberPipe, PageControls, SubmitError } from '../../../shared/ui';
 import { EnrolmentsApi, LearnersApi, SectionsApi } from '../admin.api';
 import { DELIVERY_MODES, Enrolment, InstructorSummary, Learner, SectionDetail } from '../admin.models';
 
@@ -17,7 +17,7 @@ type Tab = 'details' | 'sessions' | 'scheme' | 'enrolments';
  * grade scheme and enrolments (15.3). Rule refusals from the server (BR-01/02/03/14/16) are shown verbatim.
  */
 @Component({
-  imports: [ReactiveFormsModule, RouterLink, TranslatePipe, BilingualPipe, LocaleDatePipe, PageControls, FieldErrors, SubmitError],
+  imports: [ReactiveFormsModule, RouterLink, TranslatePipe, BilingualPipe, LocaleDatePipe, PageControls, FieldErrors, SubmitError, LocaleNumberPipe],
   templateUrl: './section-detail-page.html',
 })
 export class SectionDetailPage {

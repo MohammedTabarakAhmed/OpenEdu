@@ -31,4 +31,10 @@ public static class BusinessRules
 
     public static BusinessRuleViolationException Br16SessionOverlap() =>
         new("BR-16", "The session overlaps another session scheduled for the same instructor.");
+
+    public static BusinessRuleViolationException Br10CertificateNotEligible(decimal passThresholdPercent) =>
+        new("BR-10", $"A certificate can only be issued for a completed enrolment with a final grade at or above the pass threshold of {passThresholdPercent} percent.");
+
+    public static BusinessRuleViolationException Br11CertificateAlreadyIssued() =>
+        new("BR-11", "A certificate has already been issued for this enrolment.");
 }

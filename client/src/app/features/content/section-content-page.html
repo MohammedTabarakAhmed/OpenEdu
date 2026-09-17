@@ -17,6 +17,15 @@
     }
   </div>
 
+  <ul class="nav nav-tabs mb-3" [attr.aria-label]="'assessment.nav' | t">
+    <li class="nav-item"><a class="nav-link" routerLink="." routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" data-testid="tab-content">{{ 'assessment.tabContent' | t }}</a></li>
+    <li class="nav-item"><a class="nav-link" routerLink="../assignments" routerLinkActive="active" data-testid="tab-assignments">{{ 'assessment.tabAssignments' | t }}</a></li>
+    <li class="nav-item"><a class="nav-link" routerLink="../attendance" routerLinkActive="active" data-testid="tab-attendance">{{ 'assessment.tabAttendance' | t }}</a></li>
+    @if (canManage()) {
+      <li class="nav-item"><a class="nav-link" routerLink="../grades" routerLinkActive="active" data-testid="tab-grades">{{ 'assessment.tabGrading' | t }}</a></li>
+    }
+  </ul>
+
   <app-submit-error [error]="error()" />
   @if (notice(); as n) {
     <p class="text-success small" role="status" data-testid="notice">{{ n | t }}</p>

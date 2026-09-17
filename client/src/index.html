@@ -2,12 +2,20 @@
 <html lang="en" dir="ltr">
 <head>
   <meta charset="utf-8">
+  <!-- SEC-28 for the client page. Scripts only from this origin (no inline handlers: critical-CSS inlining is
+       disabled in angular.json for this reason); component styles are injected as <style> elements by Angular and
+       need 'unsafe-inline' for styles; Bootstrap's form icons are data: images; fonts are self-hosted. -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
   <title>OpenCampus</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="alternate icon" type="image/x-icon" href="favicon.ico">
   <meta name="theme-color" content="#0F4C5C">
+  <!-- UI-08: Bootstrap ships a mirrored build; I18nService points this link at bootstrap-rtl.css for Arabic. -->
+  <link id="bootstrap-direction" rel="stylesheet" href="bootstrap-ltr.css">
 </head>
 <body>
   <app-root></app-root>

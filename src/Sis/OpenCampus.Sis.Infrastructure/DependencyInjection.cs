@@ -1,9 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using OpenCampus.Sis.Application.Abstractions;
+using OpenCampus.Sis.Application.Certificates;
+using OpenCampus.Sis.Application.External;
 using OpenCampus.Sis.Application.Grading;
 using OpenCampus.Sis.Application.Provisioning;
+using OpenCampus.Sis.Application.Reports;
+using OpenCampus.Sis.Infrastructure.Certificates;
+using OpenCampus.Sis.Infrastructure.External;
 using OpenCampus.Sis.Infrastructure.Persistence;
 using OpenCampus.Sis.Infrastructure.Persistence.Repositories;
 
@@ -11,7 +17,7 @@ namespace OpenCampus.Sis.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddSisInfrastructure(this IServiceCollection services, IConfiguration configuration, string connectionString)
+    public static IServiceCollection AddSisInfrastructure(this IServiceCollection services, IConfiguration configuration, string connectionString, string contentRootPath)
     {
         services.AddDbContext<SisDbContext>(options =>
             options.UseSqlServer(connectionString, sql =>
@@ -32,7 +38,30 @@ public static class DependencyInjection
         services.AddScoped<ILearnerRepository, LearnerRepository>();
         services.AddScoped<IEnrolmentRepository, EnrolmentRepository>();
         services.AddScoped<IGradeEntryRepository, GradeEntryRepository>();
+        services.AddScoped<ICertificateRepository, CertificateRepository>();
+        services.AddScoped<IReportRepository, ReportRepository>();
         services.AddScoped<ISisUnitOfWork, SisUnitOfWork>();
+
+        // Certificates (Increment 6): the same configured storage root as the LMS (Appendix B "Storage"), beneath "certificates/";
+        // the PDF library and the code generator are selected here, behind the application-layer abstractions (18.5, 8.1).
+        services.AddOptions<CertificateStorageOptions>()
+            .Bind(configuration.GetSection(CertificateStorageOptions.SectionName))
+            .Validate(o => o.Validate(), "Storage configuration is invalid: a root path is required.")
+            .ValidateOnStart();
+        services.AddSingleton<ICertificateStore>(sp => new LocalCertificateStore(sp.GetRequiredService<IOptions<CertificateStorageOptions>>(), contentRootPath));
+        services.AddSingleton<ICertificateDocumentRenderer, PdfSharpCertificateRenderer>();
+        services.AddSingleton<IVerificationCodeGenerator, VerificationCodeGenerator>();
+
+        // External contracts (8.2, 18.6): the implementation set is selected from Appendix B "Notification"; only the local
+        // adapters exist under DEP-02, and any other value fails validation at start-up rather than falling back silently.
+        services.AddOptions<NotificationOptions>()
+            .Bind(configuration.GetSection(NotificationOptions.SectionName))
+            .Validate(o => o.Validate(), "Notification configuration is invalid: Implementation must be 'Local' (the only available adapter set), with an output path and a sender identity.")
+            .ValidateOnStart();
+        services.AddSingleton<IEmailDispatcher>(sp => new LocalEmailDispatcher(sp.GetRequiredService<IOptions<NotificationOptions>>(), contentRootPath, sp.GetRequiredService<TimeProvider>()));
+        services.AddSingleton<ISmsDispatcher>(sp => new LocalSmsDispatcher(sp.GetRequiredService<IOptions<NotificationOptions>>(), contentRootPath, sp.GetRequiredService<TimeProvider>()));
+        services.AddSingleton<IRecordsArchive>(sp => new LocalRecordsArchive(sp.GetRequiredService<IOptions<NotificationOptions>>(), contentRootPath, sp.GetRequiredService<TimeProvider>()));
+        services.AddSingleton<ILibraryCatalogue, LocalLibraryCatalogue>();
 
         return services;
     }

@@ -13,6 +13,7 @@ import { TranslatePipe } from '../../core/i18n/i18n.service';
         <li class="nav-item"><a class="nav-link" routerLink="catalogue" routerLinkActive="active" data-testid="nav-catalogue">{{ 'learner.nav.catalogue' | t }}</a></li>
         <li class="nav-item"><a class="nav-link" routerLink="enrolments" routerLinkActive="active" data-testid="nav-my-enrolments">{{ 'learner.nav.enrolments' | t }}</a></li>
         <li class="nav-item"><a class="nav-link" routerLink="courses" routerLinkActive="active" data-testid="nav-my-courses">{{ 'learner.nav.courses' | t }}</a></li>
+        <li class="nav-item"><a class="nav-link" routerLink="certificates" routerLinkActive="active" data-testid="nav-my-certificates">{{ 'learner.nav.certificates' | t }}</a></li>
       </ul>
     </div>
     @if (session.principal(); as user) {

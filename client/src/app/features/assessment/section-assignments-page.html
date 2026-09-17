@@ -1,0 +1,188 @@
+@if (loading()) {
+  <p class="text-secondary" role="status" data-testid="state-loading">{{ 'common.loading' | t }}</p>
+} @else if (loadError(); as e) {
+  @if (e.status === 404) {
+    <div class="alert alert-info" role="status" data-testid="state-not-found">{{ 'assessment.notFound' | t }}</div>
+  } @else {
+    <div class="alert alert-danger" role="alert" data-testid="state-error">{{ 'common.loadFailed' | t }}</div>
+  }
+} @else if (data(); as d) {
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+      <h2 class="h5 m-0" data-testid="section-title"><code>{{ d.section.courseCode }}</code> {{ d.section | bilingual: 'courseName' }}</h2>
+      <p class="small text-secondary m-0">{{ d.section.code }} · {{ d.section.termName }}</p>
+    </div>
+    @if (canManage() && !creating()) {
+      <button class="btn btn-primary btn-sm" type="button" (click)="creating.set(true)" data-testid="new-assignment">{{ 'assessment.newAssignment' | t }}</button>
+    }
+  </div>
+
+  <ul class="nav nav-tabs mb-3" [attr.aria-label]="'assessment.nav' | t">
+    <li class="nav-item"><a class="nav-link" routerLink="../content" routerLinkActive="active" data-testid="tab-content">{{ 'assessment.tabContent' | t }}</a></li>
+    <li class="nav-item"><a class="nav-link" routerLink="." routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" data-testid="tab-assignments">{{ 'assessment.tabAssignments' | t }}</a></li>
+    <li class="nav-item"><a class="nav-link" routerLink="../attendance" routerLinkActive="active" data-testid="tab-attendance">{{ 'assessment.tabAttendance' | t }}</a></li>
+    @if (canManage()) {
+      <li class="nav-item"><a class="nav-link" routerLink="../grades" routerLinkActive="active" data-testid="tab-grades">{{ 'assessment.tabGrading' | t }}</a></li>
+    }
+  </ul>
+
+  <app-submit-error [error]="error()" />
+  @if (notice(); as n) {
+    <p class="text-success small" role="status" data-testid="notice">{{ n | t }}</p>
+  }
+
+  @if (canManage() && creating()) {
+    <form class="card mb-3" [formGroup]="createForm" (ngSubmit)="createAssignment()" novalidate data-testid="create-form">
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-md-6">
+            <label class="form-label" for="a-title-en">{{ 'content.titleEn' | t }}</label>
+            <input class="form-control form-control-sm" id="a-title-en" formControlName="titleEn" [class.is-invalid]="fieldErrors('titleEn').length > 0" />
+            <app-field-errors [messages]="fieldErrors('titleEn')" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="a-title-ar">{{ 'content.titleAr' | t }}</label>
+            <input class="form-control form-control-sm" id="a-title-ar" formControlName="titleAr" dir="rtl" [class.is-invalid]="fieldErrors('titleAr').length > 0" />
+            <app-field-errors [messages]="fieldErrors('titleAr')" />
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="a-instructions">{{ 'assessment.instructions' | t }}</label>
+            <textarea class="form-control form-control-sm" id="a-instructions" rows="3" formControlName="instructions" [class.is-invalid]="fieldErrors('instructions').length > 0"></textarea>
+            <app-field-errors [messages]="fieldErrors('instructions')" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label" for="a-max-score">{{ 'assessment.maxScore' | t }}</label>
+            <input class="form-control form-control-sm" id="a-max-score" type="number" step="0.01" formControlName="maxScore" [class.is-invalid]="fieldErrors('maxScore').length > 0" />
+            <app-field-errors [messages]="fieldErrors('maxScore')" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label" for="a-due">{{ 'assessment.dueAt' | t }}</label>
+            <input class="form-control form-control-sm" id="a-due" type="datetime-local" formControlName="dueAtUtc" [class.is-invalid]="fieldErrors('dueAtUtc').length > 0" />
+            <app-field-errors [messages]="fieldErrors('dueAtUtc')" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label" for="a-penalty">{{ 'assessment.latePenalty' | t }}</label>
+            <input class="form-control form-control-sm" id="a-penalty" type="number" step="0.01" formControlName="latePenaltyPercent" [class.is-invalid]="fieldErrors('latePenaltyPercent').length > 0" />
+            <app-field-errors [messages]="fieldErrors('latePenaltyPercent')" />
+          </div>
+          <div class="col-md-3 d-flex align-items-end">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="a-allow-late" formControlName="allowLate" />
+              <label class="form-check-label" for="a-allow-late">{{ 'assessment.allowLate' | t }}</label>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex gap-2 mt-2">
+          <button class="btn btn-primary btn-sm" type="submit" [disabled]="busy()" data-testid="create-submit">{{ 'common.save' | t }}</button>
+          <button class="btn btn-outline-secondary btn-sm" type="button" (click)="creating.set(false)">{{ 'common.cancel' | t }}</button>
+        </div>
+      </div>
+    </form>
+  }
+
+  @if (d.assignments.length === 0) {
+    <p class="text-secondary" data-testid="state-empty">{{ 'assessment.noAssignments' | t }}</p>
+  }
+
+  @for (a of d.assignments; track a.id) {
+    <section class="card mb-3" [attr.data-testid]="'assignment-' + a.id">
+      <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+          <strong>{{ a | bilingual: 'title' }}</strong>
+          <span class="small text-secondary ms-2">{{ 'assessment.dueAt' | t }}: {{ a.dueAtUtc | localeDate: 'datetime' }} · {{ 'assessment.maxScore' | t }}: {{ a.maxScore }}</span>
+        </div>
+        @if (canManage()) {
+          <span class="badge" [class]="'badge text-bg-' + (a.isPublished ? 'success' : 'secondary')" [attr.data-testid]="'published-' + a.id">
+            {{ (a.isPublished ? 'content.published' : 'content.draft') | t }}
+          </span>
+        }
+      </div>
+      <div class="card-body">
+        @if (a.instructions) {
+          <p class="mb-2" style="white-space: pre-wrap">{{ a.instructions }}</p>
+        }
+
+        @if (canManage()) {
+          <p class="small text-secondary">{{ 'assessment.submissionCount' | t }}: {{ a.submissionCount }} · {{ 'assessment.markedCount' | t }}: {{ a.markedCount }}</p>
+          <div class="d-flex gap-2 mb-2">
+            <button class="btn btn-outline-primary btn-sm" type="button" (click)="openSubmissions(a)" [attr.data-testid]="'view-submissions-' + a.id">
+              {{ (expanded() === a.id ? 'assessment.hideSubmissions' : 'assessment.viewSubmissions') | t }}
+            </button>
+            <button class="btn btn-sm" [class]="'btn btn-sm ' + (a.isPublished ? 'btn-outline-secondary' : 'btn-success')" type="button" (click)="togglePublish(a)" [disabled]="busy()" [attr.data-testid]="'publish-' + a.id">
+              {{ (a.isPublished ? 'content.unpublish' : 'content.publish') | t }}
+            </button>
+            <button class="btn btn-outline-danger btn-sm" type="button" (click)="deleteAssignment(a)" [disabled]="busy()" [attr.data-testid]="'delete-' + a.id">{{ 'common.delete' | t }}</button>
+          </div>
+
+          @if (expanded() === a.id && submissions(); as s) {
+            <div class="table-responsive">
+              <table class="table table-sm align-middle" data-testid="submissions-table">
+                <thead>
+                  <tr>
+                    <th scope="col">{{ 'assessment.learner' | t }}</th>
+                    <th scope="col">{{ 'assessment.submittedAt' | t }}</th>
+                    <th scope="col">{{ 'assessment.score' | t }}</th>
+                    <th scope="col"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (sub of s.submissions; track sub.id) {
+                    <tr [attr.data-testid]="'submission-' + sub.id">
+                      <td>{{ sub.learnerNumber }} — {{ sub.learnerNameEn }}</td>
+                      <td>
+                        {{ sub.submittedAtUtc | localeDate: 'datetime' }}
+                        @if (sub.isLate) { <span class="badge text-bg-warning ms-1">{{ 'assessment.late' | t }}</span> }
+                        @if (sub.hasFile) {
+                          <button class="btn btn-link btn-sm p-0 ms-1" type="button" (click)="downloadFile(sub.id, sub.learnerNumber + '-submission')" [attr.data-testid]="'download-' + sub.id">{{ 'assessment.file' | t }}</button>
+                        }
+                      </td>
+                      <td>{{ (sub.score | localeNumber) || '—' }}</td>
+                      <td class="text-end">
+                        @if (markingId() === sub.id) {
+                          <form class="d-flex gap-1 align-items-start" [formGroup]="markForm" (ngSubmit)="mark(a)" novalidate>
+                            <input class="form-control form-control-sm" style="width: 5rem" type="number" step="0.01" formControlName="score" [attr.aria-label]="'assessment.score' | t" />
+                            <input class="form-control form-control-sm" formControlName="feedback" [placeholder]="'assessment.feedback' | t" />
+                            <button class="btn btn-primary btn-sm" type="submit" [disabled]="busy()" data-testid="mark-submit">{{ 'common.save' | t }}</button>
+                            <button class="btn btn-outline-secondary btn-sm" type="button" (click)="markingId.set(null)">{{ 'common.cancel' | t }}</button>
+                          </form>
+                        } @else {
+                          <button class="btn btn-outline-primary btn-sm" type="button" (click)="openMark(sub.id, sub.score, sub.feedback)" [attr.data-testid]="'mark-' + sub.id">{{ 'assessment.mark' | t }}</button>
+                        }
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr><td colspan="4" class="text-secondary small">{{ 'assessment.noSubmissions' | t }}</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        } @else {
+          @if (a.mySubmission; as mine) {
+            <p class="small" data-testid="my-submission">
+              {{ 'assessment.submittedAt' | t }}: {{ mine.submittedAtUtc | localeDate: 'datetime' }}
+              @if (mine.isLate) { <span class="badge text-bg-warning ms-1">{{ 'assessment.late' | t }}</span> }
+              — {{ 'assessment.score' | t }}: {{ mine.score ?? ('assessment.notMarkedYet' | t) }}
+              @if (mine.feedback) { <br />{{ 'assessment.feedback' | t }}: {{ mine.feedback }} }
+            </p>
+            @if (mine.hasFile) {
+              <button class="btn btn-link btn-sm p-0" type="button" (click)="downloadFile(mine.id, 'submission')" [attr.data-testid]="'my-download-' + a.id">{{ 'assessment.file' | t }}</button>
+            }
+          }
+          @if (!a.mySubmission || a.mySubmission.score === null) {
+            <form class="mt-2" [formGroup]="submitForm" (ngSubmit)="submit(a)" novalidate [attr.data-testid]="'submit-form-' + a.id">
+              <label class="form-label small" [for]="'text-' + a.id">{{ 'assessment.textBody' | t }}</label>
+              <textarea class="form-control form-control-sm" [id]="'text-' + a.id" rows="3" formControlName="textBody"></textarea>
+              <label class="form-label small mt-2" [for]="'file-' + a.id">{{ 'assessment.attachFile' | t }}</label>
+              <input class="form-control form-control-sm" type="file" [id]="'file-' + a.id" (change)="pickFile($event)" />
+              <app-field-errors [messages]="fieldErrors('file')" />
+              <button class="btn btn-primary btn-sm mt-2" type="submit" [disabled]="busy()" [attr.data-testid]="'submit-' + a.id">
+                {{ (a.mySubmission ? 'assessment.resubmit' : 'assessment.submit') | t }}
+              </button>
+            </form>
+          }
+        }
+      </div>
+    </section>
+  }
+}

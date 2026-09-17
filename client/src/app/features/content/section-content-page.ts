@@ -1,9 +1,10 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 import { Observable } from 'rxjs';
 import { PresentableError, errorsFor, toPresentableError } from '../../core/api/problem';
-import { TranslatePipe } from '../../core/i18n/i18n.service';
-import { BilingualPipe, ConfirmService, FieldErrors, SubmitError } from '../../shared/ui';
+import { I18nService, TranslatePipe } from '../../core/i18n/i18n.service';
+import { BilingualPipe, ConfirmService, FieldErrors, formatLocaleNumber, SubmitError } from '../../shared/ui';
 import { BlobSaver, ContentApi } from './content.api';
 import { CONTENT_ITEM_TYPES, ContentItem, CourseContent, SectionContent } from './content.models';
 
@@ -13,7 +14,7 @@ import { CONTENT_ITEM_TYPES, ContentItem, CourseContent, SectionContent } from '
  * refusals verbatim. Learners see published items only (BR-15) because the server never sends the others.
  */
 @Component({
-  imports: [ReactiveFormsModule, TranslatePipe, BilingualPipe, FieldErrors, SubmitError],
+  imports: [ReactiveFormsModule, RouterLink, RouterLinkActive, TranslatePipe, BilingualPipe, FieldErrors, SubmitError],
   templateUrl: './section-content-page.html',
 })
 export class SectionContentPage {
@@ -23,6 +24,7 @@ export class SectionContentPage {
   private readonly fb = inject(FormBuilder);
   private readonly confirm = inject(ConfirmService);
   private readonly saver = inject(BlobSaver);
+  private readonly i18n = inject(I18nService);
 
   protected readonly itemTypes = CONTENT_ITEM_TYPES;
   protected readonly content = signal<SectionContent | null>(null);
@@ -156,14 +158,15 @@ export class SectionContentPage {
     });
   }
 
+  /** UI-09: the magnitude is formatted for the active locale and the unit comes from the resources (UI-06). */
   protected formatSize(bytes: number): string {
     if (bytes < 1024) {
-      return `${bytes} B`;
+      return `${formatLocaleNumber(this.i18n.language(), bytes)} ${this.i18n.t('common.unit.bytes')}`;
     }
     if (bytes < 1024 * 1024) {
-      return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${formatLocaleNumber(this.i18n.language(), bytes / 1024, 'number', 1)} ${this.i18n.t('common.unit.kilobytes')}`;
     }
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    return `${formatLocaleNumber(this.i18n.language(), bytes / (1024 * 1024), 'number', 1)} ${this.i18n.t('common.unit.megabytes')}`;
   }
 
   /** Runs a mutation with the in-flight guard (17.5), then reloads the hierarchy so the view reflects the server. */

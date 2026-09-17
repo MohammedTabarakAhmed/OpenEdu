@@ -19,6 +19,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     /// <summary>The file store root of this run: isolated from the host's data directory and removed afterwards (TST-01/02).</summary>
     public string FileStoreRoot { get; } = Path.Combine(Path.GetTempPath(), "opencampus-tests", "files-" + Guid.NewGuid().ToString("N"));
 
+    /// <summary>Where the local external adapters (8.3) persist their evidence for this run; removed afterwards.</summary>
+    public string NotificationRoot => Path.Combine(FileStoreRoot, "notifications");
+
     /// <summary>Upload bound of the test host (SEC-22); small so limit tests stay cheap.</summary>
     public const long MaxUploadSizeBytes = 64 * 1024;
 
@@ -28,6 +31,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("ConnectionStrings:OpenCampus", ConnectionString);
         builder.UseSetting("Storage:RootPath", FileStoreRoot);
         builder.UseSetting("Storage:MaxUploadSizeBytes", MaxUploadSizeBytes.ToString());
+        builder.UseSetting("Notification:OutputPath", NotificationRoot);
 
         // Test-only tuning: the shared host must not rate-limit the suite (a dedicated host covers SEC-16),
         // and the PBKDF2 floor keeps credential-heavy tests fast while remaining a valid configuration.

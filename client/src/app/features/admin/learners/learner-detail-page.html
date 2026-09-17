@@ -1,4 +1,4 @@
-<nav aria-label="breadcrumb">
+<nav [attr.aria-label]="'common.breadcrumb' | t">
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a routerLink="/admin/learners">{{ 'learners.title' | t }}</a></li>
     <li class="breadcrumb-item active" aria-current="page">{{ learner()?.learnerNumber ?? '…' }}</li>
@@ -84,10 +84,17 @@
             <td>{{ e.section.termName }}</td>
             <td>{{ e.enrolledAtUtc | localeDate: 'datetime' }}</td>
             <td><span class="badge" [class]="'badge text-bg-' + (e.status === 'Active' ? 'success' : e.status === 'Withdrawn' ? 'secondary' : 'warning')">{{ 'enrolments.status.' + e.status | t }}</span></td>
-            <td>{{ e.finalGrade ?? '—' }}</td>
+            <td>{{ (e.finalGrade | localeNumber) || '—' }}</td>
             <td class="text-end">
               @if (session.hasPermission('sis.enrolment.write') && (e.status === 'Active' || e.status === 'AtRisk')) {
                 <button class="btn btn-link btn-sm text-danger" type="button" (click)="withdraw(e)">{{ 'enrolments.withdraw' | t }}</button>
+              }
+              @if (e.status === 'Completed') {
+                @if (certificateFor(e.id); as certificate) {
+                  <button class="btn btn-link btn-sm" type="button" (click)="downloadCertificate(certificate)" [disabled]="busy()" [attr.data-testid]="'download-certificate-' + e.id">{{ 'certificates.download' | t }}</button>
+                } @else if (session.hasPermission('sis.certificate.issue')) {
+                  <button class="btn btn-link btn-sm" type="button" (click)="issueCertificate(e)" [disabled]="busy()" [attr.data-testid]="'issue-certificate-' + e.id">{{ 'certificates.issue' | t }}</button>
+                }
               }
             </td>
           </tr>

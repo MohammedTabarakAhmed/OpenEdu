@@ -15,4 +15,19 @@ export const instructorRoutes: Routes = [
     canActivate: [permissionGuard('lms.content.write')],
     loadComponent: () => import('../content/section-content-page').then((m) => m.SectionContentPage),
   },
+  {
+    path: 'sections/:id/assignments',
+    canActivate: [permissionGuard('lms.assignment.write')],
+    loadComponent: () => import('../assessment/section-assignments-page').then((m) => m.SectionAssignmentsPage),
+  },
+  {
+    path: 'sections/:id/attendance',
+    canActivate: [permissionGuard('lms.attendance.write')],
+    loadComponent: () => import('../assessment/section-attendance-page').then((m) => m.SectionAttendancePage),
+  },
+  {
+    path: 'sections/:id/grades',
+    canActivate: [permissionGuard('sis.grade.write')],
+    loadComponent: () => import('../assessment/section-grading-page').then((m) => m.SectionGradingPage),
+  },
 ];

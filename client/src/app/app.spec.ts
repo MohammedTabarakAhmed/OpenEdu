@@ -4,6 +4,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideRouter } from '@angular/router';
 import { App } from './app';
 import { SessionService } from './core/auth/session.service';
+import { BOOTSTRAP_LINK_ID } from './core/i18n/i18n.service';
+import { ar } from './core/i18n/resources';
 import { authenticated } from './core/auth/session.service.spec';
 
 describe('App', () => {
@@ -77,5 +79,43 @@ describe('App', () => {
     expect(document.documentElement.lang).toBe('ar');
     expect(document.documentElement.dir).toBe('rtl');
     expect(localStorage.getItem('opencampus.language')).toBe('ar');
+  });
+
+  // Increment 6 exit criterion: the journey is available in Arabic — shell strings, the user's Arabic name,
+  // the mirrored stylesheet and the document title all follow the selection, and it survives a new session.
+  it('presents the signed-in shell in Arabic with the mirrored stylesheet and keeps the choice for the next session', async () => {
+    const fixture = TestBed.createComponent(App);
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne('/api/health').flush('Healthy');
+    await fixture.whenStable();
+    TestBed.inject(SessionService).login('ada', 'pw').subscribe();
+    http.expectOne('/api/v1/auth/login').flush({ mfaRequired: false, challenge: null, authenticated: authenticated('tok', ['Learner']) });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    (element(fixture, 'language-toggle') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(element(fixture, 'nav-learner')?.textContent?.trim()).toBe(ar['nav.learner']);
+    expect(element(fixture, 'logout')?.textContent?.trim()).toBe(ar['nav.logout']);
+    expect(element(fixture, 'current-user')?.textContent).toContain('آدا');
+    expect(element(fixture, 'language-toggle')?.textContent?.trim()).toBe('English');
+    expect(document.title).toBe(ar['app.title']);
+    expect(document.getElementById(BOOTSTRAP_LINK_ID)?.getAttribute('href')).toBe('bootstrap-rtl.css');
+
+    // A new session (fresh injector, same browser storage) starts in Arabic without any interaction.
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [App],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
+    }).compileComponents();
+    const next = TestBed.createComponent(App);
+    TestBed.inject(HttpTestingController).expectOne('/api/health').flush('Healthy');
+    await next.whenStable();
+
+    expect(document.documentElement.dir).toBe('rtl');
+    expect(element(next, 'nav-admin')).toBeNull();
+    expect(element(next, 'language-toggle')?.textContent?.trim()).toBe('English');
   });
 });

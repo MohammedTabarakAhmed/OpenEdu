@@ -16,6 +16,20 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/login').then((m) => m.Login),
   },
   {
+    // 15.4: certificate verification is anonymous — no guard; a signed-in user may use it too.
+    path: 'verify',
+    loadComponent: () => import('./features/certificates/verify-certificate-page').then((m) => m.VerifyCertificatePage),
+  },
+  {
+    path: 'verify/:code',
+    loadComponent: () => import('./features/certificates/verify-certificate-page').then((m) => m.VerifyCertificatePage),
+  },
+  {
+    // Privacy notice: anonymous, readable before signing in (optional scope, added after the mandatory increments).
+    path: 'privacy',
+    loadComponent: () => import('./features/legal/privacy-notice-page').then((m) => m.PrivacyNoticePage),
+  },
+  {
     path: 'admin',
     canActivate: [roleGuard(Roles.Administrator, Roles.Registrar)],
     loadComponent: () => import('./layouts/admin/admin-layout').then((m) => m.AdminLayout),

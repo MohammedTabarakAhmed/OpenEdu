@@ -1,4 +1,4 @@
-<nav aria-label="breadcrumb">
+<nav [attr.aria-label]="'common.breadcrumb' | t">
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a routerLink="/admin/sections">{{ 'sections.title' | t }}</a></li>
     <li class="breadcrumb-item active" aria-current="page">{{ detail()?.section?.code ?? '…' }}</li>
@@ -192,8 +192,8 @@
             @for (c of d.gradeComponents; track c.id) {
               <tr>
                 <td>{{ c | bilingual: 'name' }}</td>
-                <td>{{ c.weightPercent }}%</td>
-                <td>{{ c.maxScore }}</td>
+                <td>{{ c.weightPercent | localeNumber: 'percent' }}</td>
+                <td>{{ c.maxScore | localeNumber }}</td>
                 <td class="text-end">
                   @if (canWrite() && isAmendable()) {
                     <button class="btn btn-link btn-sm text-danger" type="button" (click)="removeComponent(c.id)">{{ 'common.remove' | t }}</button>

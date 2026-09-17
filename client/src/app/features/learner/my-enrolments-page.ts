@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { PresentableError, toPresentableError } from '../../core/api/problem';
 import { TranslatePipe } from '../../core/i18n/i18n.service';
 import { PageState } from '../../shared/page-state';
@@ -8,7 +9,7 @@ import { Enrolment, Transcript } from '../admin/admin.models';
 
 /** Enrolled course listing and withdrawal for the calling learner (15.3), plus the learner's own transcript summary. */
 @Component({
-  imports: [TranslatePipe, BilingualPipe, LocaleDatePipe, PageControls, SubmitError],
+  imports: [RouterLink, TranslatePipe, BilingualPipe, LocaleDatePipe, PageControls, SubmitError],
   template: `
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
       <h2 class="h5 m-0">{{ 'myEnrolments.title' | t }}</h2>
@@ -53,6 +54,7 @@ import { Enrolment, Transcript } from '../admin/admin.models';
                 <td>{{ e.enrolledAtUtc | localeDate: 'datetime' }}</td>
                 <td><span class="badge" [class]="'badge text-bg-' + (e.status === 'Active' ? 'success' : e.status === 'Withdrawn' ? 'secondary' : 'warning')">{{ 'enrolments.status.' + e.status | t }}</span></td>
                 <td class="text-end">
+                  <a class="btn btn-link btn-sm" [routerLink]="['/learner/enrolments', e.id, 'results']" [attr.data-testid]="'results-' + e.id">{{ 'assessment.results' | t }}</a>
                   @if (e.status === 'Active' || e.status === 'AtRisk') {
                     <button class="btn btn-link btn-sm text-danger" type="button" (click)="withdraw(e)" [disabled]="busy()">{{ 'enrolments.withdraw' | t }}</button>
                   }

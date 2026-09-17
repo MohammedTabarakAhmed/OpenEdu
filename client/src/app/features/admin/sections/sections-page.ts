@@ -5,13 +5,13 @@ import { PresentableError, errorsFor, toPresentableError } from '../../../core/a
 import { SessionService } from '../../../core/auth/session.service';
 import { TranslatePipe } from '../../../core/i18n/i18n.service';
 import { PageState } from '../../../shared/page-state';
-import { BilingualPipe, FieldErrors, LocaleDatePipe, PageControls, SearchBox, SubmitError } from '../../../shared/ui';
+import { BilingualPipe, FieldErrors, LocaleDatePipe, LocaleNumberPipe, PageControls, SearchBox, SubmitError } from '../../../shared/ui';
 import { CoursesApi, SectionsApi } from '../admin.api';
 import { Course, DELIVERY_MODES, InstructorSummary, SECTION_STATUSES, Section } from '../admin.models';
 
 /** Section listing with status filter and creation (15.3); management continues on the detail page. */
 @Component({
-  imports: [ReactiveFormsModule, RouterLink, TranslatePipe, BilingualPipe, LocaleDatePipe, PageControls, FieldErrors, SubmitError, SearchBox],
+  imports: [ReactiveFormsModule, RouterLink, TranslatePipe, BilingualPipe, LocaleDatePipe, PageControls, FieldErrors, SubmitError, SearchBox, LocaleNumberPipe],
   templateUrl: './sections-page.html',
 })
 export class SectionsPage {

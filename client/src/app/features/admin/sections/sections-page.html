@@ -105,7 +105,7 @@
             <td>{{ section.termName }}</td>
             <td>{{ section.startDate | localeDate }} – {{ section.endDate | localeDate }}</td>
             <td>{{ section.instructor ? (section.instructor | bilingual: 'fullName') : '—' }}</td>
-            <td>{{ section.activeEnrolmentCount }} / {{ section.capacity }}</td>
+            <td>{{ section.activeEnrolmentCount | localeNumber }} / {{ section.capacity | localeNumber }}</td>
             <td><span class="badge" [class]="'badge text-bg-' + (section.status === 'Open' ? 'success' : section.status === 'Draft' ? 'secondary' : 'dark')">{{ 'sections.status.' + section.status | t }}</span></td>
           </tr>
         }

@@ -6,9 +6,13 @@ export type Language = 'en' | 'ar';
 
 const STORAGE_KEY = 'opencampus.language';
 
+/** The stylesheet link in index.html that carries the direction-specific Bootstrap build (UI-08). */
+export const BOOTSTRAP_LINK_ID = 'bootstrap-direction';
+
 /**
- * SDD 17.4 groundwork. UI-06: strings by identifier; UI-07: language sets document language
- * and direction; UI-10: the selection persists across sessions. Full coverage is Increment 6.
+ * SDD 17.4. UI-06: strings by identifier; UI-07: language sets document language and direction (and
+ * swaps Bootstrap's LTR/RTL build, since the framework's own internals are physical); UI-10: the selection
+ * persists across sessions. The document title follows the language too, so no user-facing string is fixed.
  */
 @Injectable({ providedIn: 'root' })
 export class I18nService {
@@ -20,8 +24,11 @@ export class I18nService {
   constructor() {
     effect(() => {
       const language = this.current();
+      const direction = language === 'ar' ? 'rtl' : 'ltr';
       this.document.documentElement.lang = language;
-      this.document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+      this.document.documentElement.dir = direction;
+      this.document.title = this.t('app.title');
+      this.bootstrapLink().setAttribute('href', `bootstrap-${direction}.css`);
     });
   }
 
@@ -40,6 +47,19 @@ export class I18nService {
 
   toggle(): void {
     this.use(this.current() === 'en' ? 'ar' : 'en');
+  }
+
+  /** Finds the direction-specific Bootstrap link, creating it when the host page has none (tests). */
+  private bootstrapLink(): HTMLLinkElement {
+    const existing = this.document.getElementById(BOOTSTRAP_LINK_ID);
+    if (existing instanceof HTMLLinkElement) {
+      return existing;
+    }
+    const link = this.document.createElement('link');
+    link.id = BOOTSTRAP_LINK_ID;
+    link.rel = 'stylesheet';
+    this.document.head.prepend(link);
+    return link;
   }
 
   private restore(): Language {

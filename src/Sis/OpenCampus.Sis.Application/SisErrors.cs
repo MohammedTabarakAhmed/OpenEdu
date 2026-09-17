@@ -25,6 +25,9 @@ public static class SisErrors
 
     public static readonly Error EnrolmentNotFound = Error.NotFound("enrolments.not_found", "The enrolment was not found.");
 
+    public static readonly Error CertificateNotFound = Error.NotFound("certificates.not_found", "The certificate was not found.");
+    public static readonly Error CertificateDocumentMissing = Error.NotFound("certificates.document_missing", "The certificate document is not available.");
+
     public static Error UnknownUser(string field) => Error.Validation(field, "The referenced user does not exist or is not active.");
 
     public static Error UserLacksRole(string field, string role) => Error.Validation(field, $"The referenced user does not hold the {role} role.");

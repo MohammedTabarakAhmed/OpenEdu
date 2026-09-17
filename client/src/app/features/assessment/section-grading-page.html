@@ -1,0 +1,84 @@
+@if (loading()) {
+  <p class="text-secondary" role="status" data-testid="state-loading">{{ 'common.loading' | t }}</p>
+} @else if (loadError(); as e) {
+  @if (e.status === 404) {
+    <div class="alert alert-info" role="status" data-testid="state-not-found">{{ 'assessment.notFound' | t }}</div>
+  } @else {
+    <div class="alert alert-danger" role="alert" data-testid="state-error">{{ 'common.loadFailed' | t }}</div>
+  }
+} @else if (gradebook(); as g) {
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+      <h2 class="h5 m-0" data-testid="section-title"><code>{{ g.courseCode }}</code> {{ g | bilingual: 'courseName' }}</h2>
+      <p class="small text-secondary m-0">{{ g.sectionCode }}</p>
+    </div>
+    <ul class="nav nav-tabs" [attr.aria-label]="'assessment.nav' | t">
+      <li class="nav-item"><a class="nav-link" routerLink="../content" routerLinkActive="active" data-testid="tab-content">{{ 'assessment.tabContent' | t }}</a></li>
+      <li class="nav-item"><a class="nav-link" routerLink="../assignments" routerLinkActive="active" data-testid="tab-assignments">{{ 'assessment.tabAssignments' | t }}</a></li>
+      <li class="nav-item"><a class="nav-link" routerLink="../attendance" routerLinkActive="active" data-testid="tab-attendance">{{ 'assessment.tabAttendance' | t }}</a></li>
+      <li class="nav-item"><a class="nav-link" routerLink="." routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" data-testid="tab-grades">{{ 'assessment.tabGrading' | t }}</a></li>
+    </ul>
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge" [class]="'badge text-bg-' + (g.isReleased ? 'success' : 'secondary')" data-testid="release-status">
+        {{ (g.isReleased ? 'assessment.released' : 'assessment.unreleased') | t }}
+      </span>
+      @if (!g.isReleased) {
+        <button class="btn btn-primary btn-sm" type="button" (click)="release()" [disabled]="busy() || g.ungradedPairCount > 0" data-testid="release">
+          {{ 'assessment.release' | t }}
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (!g.isReleased && g.ungradedPairCount > 0) {
+    <p class="small text-secondary" data-testid="ungraded-notice">{{ 'assessment.ungradedPairs' | t }}: {{ g.ungradedPairCount }}</p>
+  }
+
+  <app-submit-error [error]="error()" />
+  @if (notice(); as n) {
+    <p class="text-success small" role="status" data-testid="notice">{{ n | t }}</p>
+  }
+
+  @if (g.rows.length === 0) {
+    <p class="text-secondary" data-testid="state-empty">{{ 'assessment.noEnrolments' | t }}</p>
+  } @else {
+    <div class="table-responsive">
+      <table class="table table-sm align-middle" data-testid="gradebook-table">
+        <thead>
+          <tr>
+            <th scope="col">{{ 'assessment.learner' | t }}</th>
+            @for (c of g.components; track c.id) {
+              <th scope="col">{{ c | bilingual: 'name' }} ({{ c.weightPercent | localeNumber: 'percent' }})</th>
+            }
+            <th scope="col">{{ 'assessment.finalGrade' | t }}</th>
+            <th scope="col">{{ 'common.status' | t }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of g.rows; track row.enrolmentId) {
+            <tr [attr.data-testid]="'row-' + row.enrolmentId">
+              <td>{{ row.learnerNumber }} — {{ row.fullNameEn }}</td>
+              @for (c of g.components; track c.id) {
+                <td [attr.data-testid]="'cell-' + row.enrolmentId + '-' + c.id">
+                  @if (editing() === editKey(row.enrolmentId, c.id)) {
+                    <form class="d-flex gap-1" [formGroup]="scoreForm" (ngSubmit)="saveScore(row.enrolmentId, c.id)" novalidate>
+                      <input class="form-control form-control-sm" style="width: 4.5rem" type="number" step="0.01" formControlName="score" [attr.aria-label]="'assessment.score' | t" />
+                      <button class="btn btn-primary btn-sm" type="submit" [disabled]="busy()" data-testid="score-submit">{{ 'common.save' | t }}</button>
+                      <button class="btn btn-outline-secondary btn-sm" type="button" (click)="editing.set(null)">{{ 'common.cancel' | t }}</button>
+                    </form>
+                  } @else {
+                    <button class="btn btn-link btn-sm p-0" type="button" (click)="openEdit(row.enrolmentId, c.id, scoreFor(row, c.id))" [attr.data-testid]="'edit-' + row.enrolmentId + '-' + c.id">
+                      {{ (scoreFor(row, c.id) | localeNumber) || '—' }} / {{ c.maxScore | localeNumber }}
+                    </button>
+                  }
+                </td>
+              }
+              <td>{{ (row.finalGrade | localeNumber) || '—' }}</td>
+              <td><span class="badge" [class]="'badge text-bg-' + (row.status === 'Completed' ? 'success' : row.status === 'AtRisk' ? 'warning' : 'secondary')">{{ 'enrolments.status.' + row.status | t }}</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+}

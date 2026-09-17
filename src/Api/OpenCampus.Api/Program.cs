@@ -57,7 +57,7 @@ builder.Services.AddDataProtection()
 builder.Services.AddIdentityApplication();
 builder.Services.AddIdentityInfrastructure(builder.Configuration, connectionString, builder.Environment.ContentRootPath);
 builder.Services.AddSisApplication();
-builder.Services.AddSisInfrastructure(builder.Configuration, connectionString);
+builder.Services.AddSisInfrastructure(builder.Configuration, connectionString, builder.Environment.ContentRootPath);
 builder.Services.AddLmsApplication();
 builder.Services.AddLmsInfrastructure(builder.Configuration, connectionString, builder.Environment.ContentRootPath);
 // Cross-module contracts (6.5, MB-02), implemented at the composition root: SIS → Identity, LMS → SIS.
@@ -106,6 +106,8 @@ builder.Services.AddAuthorizationBuilder()
 var accountProtection = builder.Configuration.GetSection(AccountProtectionOptions.SectionName).Get<AccountProtectionOptions>()
     ?? new AccountProtectionOptions();
 builder.Services.AddOpenCampusRateLimiting(accountProtection);
+// SEC-27..29: HSTS, response security headers and CORS restricted to configured origins (none by default).
+builder.Services.AddOpenCampusTransportSecurity(builder.Configuration);
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<IdentityDbContext>()
@@ -140,6 +142,7 @@ if (!app.Environment.IsEnvironment("Test"))
 
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseExceptionHandler();
+app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseStatusCodePages();
 app.UseSerilogRequestLogging();
 
@@ -148,8 +151,16 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi().AllowAnonymous();
 }
 
+// SEC-27: HTTPS everywhere (9.2). HSTS is withheld in Development; the framework also exempts "localhost" itself,
+// since a pinned localhost would bind every other local project and port on the workstation for a year.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
+
 app.UseHttpsRedirection();
 
+app.UseCors(TransportSecurity.CorsPolicy); // SEC-29
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using OpenCampus.SharedKernel;
 using OpenCampus.Sis.Application.Abstractions;
+using OpenCampus.Sis.Application.External;
 using OpenCampus.Sis.Domain.Enrolments;
 using OpenCampus.Sis.Domain.Sections;
 
@@ -21,6 +22,7 @@ public sealed class GradingService(
     IUserDirectory users,
     ICurrentUser currentUser,
     IAuditTrail audit,
+    LearnerNotifier notifier,
     ISisUnitOfWork unitOfWork,
     TimeProvider clock)
 {
@@ -119,6 +121,11 @@ public sealed class GradingService(
             SisAuditEventTypes.GradesReleased, nameof(CourseSection), section.Id,
             JsonSerializer.Serialize(new { sectionId = section.Id, enrolmentsCompleted = active.Count, entriesReleased = entries.Count }),
             cancellationToken);
+
+        // EXT-01: the completed learners are told; a dispatch failure is logged by the notifier and never undoes the release.
+        var course = (await courses.FindManyAsync([section.CourseId], cancellationToken))[section.CourseId];
+        var completedLearners = (await learners.FindManyAsync(active.Select(e => e.LearnerId), cancellationToken)).Values.ToList();
+        await notifier.GradesReleasedAsync(completedLearners, section.Code, course.Code, course.NameEn, cancellationToken);
 
         return Result.Success(await BuildGradebookAsync(section, cancellationToken));
     }
