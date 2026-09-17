@@ -5,6 +5,7 @@ using OpenCampus.Identity.Application.Authorization;
 using OpenCampus.SharedKernel;
 using OpenCampus.Sis.Application.Catalogue;
 using OpenCampus.Sis.Application.Enrolments;
+using OpenCampus.Sis.Application.Grading;
 using OpenCampus.Sis.Application.Learners;
 
 namespace OpenCampus.Api.Controllers;
@@ -166,4 +167,12 @@ public sealed class MyEnrolmentsController(LearnerSelfService selfService) : Con
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TranscriptResponse>> Transcript(CancellationToken cancellationToken) =>
         (await selfService.MyTranscriptAsync(cancellationToken)).ToActionResult(this);
+
+    /// <summary>Released grade retrieval (15.3; BR-06): the caller's own enrolment only.</summary>
+    [HttpGet("{id:guid}/results")]
+    [HasPermission(Permissions.Sis.GradeRead)]
+    [ProducesResponseType<LearnerResultsResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<LearnerResultsResponse>> Results(Guid id, CancellationToken cancellationToken) =>
+        (await selfService.MyResultsAsync(id, cancellationToken)).ToActionResult(this);
 }
