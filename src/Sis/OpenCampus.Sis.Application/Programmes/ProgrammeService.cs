@@ -5,7 +5,7 @@ using OpenCampus.Sis.Domain.Programmes;
 namespace OpenCampus.Sis.Application.Programmes;
 
 /// <summary>Programme listing, creation, retrieval, amendment and deletion (15.3 "Academic structure").</summary>
-public sealed class ProgrammeService(IProgrammeRepository programmes, ISisUnitOfWork unitOfWork)
+public sealed class ProgrammeService(IProgrammeRepository programmes, ISisUnitOfWork unitOfWork, IReferenceDataCache cache)
 {
     public async Task<PagedResponse<ProgrammeResponse>> ListAsync(ProgrammeListQuery query, CancellationToken cancellationToken)
     {
@@ -55,6 +55,7 @@ public sealed class ProgrammeService(IProgrammeRepository programmes, ISisUnitOf
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        cache.InvalidateProgramme(id); // 18.4: explicit invalidation after amendment
         return Result.Success(ToResponse(programme));
     }
 
@@ -74,6 +75,7 @@ public sealed class ProgrammeService(IProgrammeRepository programmes, ISisUnitOf
 
         programme.MarkDeleted();
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        cache.InvalidateProgramme(id);
         return Result.Success();
     }
 

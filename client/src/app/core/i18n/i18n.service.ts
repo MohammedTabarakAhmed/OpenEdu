@@ -28,7 +28,14 @@ export class I18nService {
       this.document.documentElement.lang = language;
       this.document.documentElement.dir = direction;
       this.document.title = this.t('app.title');
-      this.bootstrapLink().setAttribute('href', `bootstrap-${direction}.css`);
+      this.document.querySelector('meta[name="description"]')?.setAttribute('content', this.t('app.description'));
+      // Only when the build actually changes: re-setting an identical href makes the browser re-fetch and re-apply
+      // the stylesheet, which on a cold load shows as a layout shift.
+      const link = this.bootstrapLink();
+      const href = `bootstrap-${direction}.css`;
+      if (link.getAttribute('href') !== href) {
+        link.setAttribute('href', href);
+      }
     });
   }
 

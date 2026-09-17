@@ -1,6 +1,7 @@
 /** UI-06: every user-facing string is resolved from these resources by identifier. */
 export const en = {
   'app.title': 'OpenCampus',
+  'app.description': 'Learning and student-records platform: programmes, courses, assessment, attendance, results and verifiable certificates.',
   'app.api': 'API',
   'app.api.healthy': 'Healthy',
   'app.api.unreachable': 'Unreachable',
@@ -370,6 +371,7 @@ export type ResourceKey = keyof typeof en;
 
 export const ar: Record<ResourceKey, string> = {
   'app.title': 'أوبن كامبس',
+  'app.description': 'منصة التعلّم وسجلات الطلبة: البرامج والمقررات والتقييم والحضور والنتائج والشهادات القابلة للتحقق.',
   'app.api': 'الواجهة',
   'app.api.healthy': 'تعمل',
   'app.api.unreachable': 'غير متاحة',

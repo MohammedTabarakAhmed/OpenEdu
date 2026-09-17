@@ -30,7 +30,8 @@
     </div>
   </div>
 </nav>
-<main class="container py-4">
+<!-- The shell fills the viewport and the footer sits at its foot, so a lazily loaded route does not shift it (CLS). -->
+<main class="container py-4 oc-main">
   <router-outlet />
 </main>
 <footer class="container pb-4 small text-secondary">

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -7,6 +8,7 @@ using OpenCampus.Sis.Application.Certificates;
 using OpenCampus.Sis.Application.External;
 using OpenCampus.Sis.Application.Grading;
 using OpenCampus.Sis.Application.Provisioning;
+using OpenCampus.Sis.Infrastructure.Caching;
 using OpenCampus.Sis.Application.Reports;
 using OpenCampus.Sis.Infrastructure.Certificates;
 using OpenCampus.Sis.Infrastructure.External;
@@ -32,7 +34,18 @@ public static class DependencyInjection
             .Validate(o => o.Validate(), "Academic configuration is invalid: pass and attendance thresholds must be percentages between 0 and 100.")
             .ValidateOnStart();
 
-        services.AddScoped<IProgrammeRepository, ProgrammeRepository>();
+        // 18.4: programmes are the first cacheable reference-data read path; the decorator caches only the batched
+        // read-only lookup, with bounded expiry from configuration and explicit invalidation through IReferenceDataCache.
+        services.AddMemoryCache();
+        services.AddOptions<ReferenceDataCacheOptions>()
+            .Bind(configuration.GetSection(ReferenceDataCacheOptions.SectionName))
+            .Validate(o => o.Validate(), "ReferenceDataCache:ProgrammeExpiry must be between 1 second and 24 hours.")
+            .ValidateOnStart();
+        services.AddScoped<ProgrammeRepository>();
+        services.AddScoped<CachedProgrammeRepository>(sp => new CachedProgrammeRepository(
+            sp.GetRequiredService<ProgrammeRepository>(), sp.GetRequiredService<IMemoryCache>(), sp.GetRequiredService<IOptions<ReferenceDataCacheOptions>>()));
+        services.AddScoped<IProgrammeRepository>(sp => sp.GetRequiredService<CachedProgrammeRepository>());
+        services.AddScoped<IReferenceDataCache>(sp => sp.GetRequiredService<CachedProgrammeRepository>());
         services.AddScoped<ICourseRepository, CourseRepository>();
         services.AddScoped<ISectionRepository, SectionRepository>();
         services.AddScoped<ILearnerRepository, LearnerRepository>();

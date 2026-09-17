@@ -108,6 +108,15 @@ var accountProtection = builder.Configuration.GetSection(AccountProtectionOption
 builder.Services.AddOpenCampusRateLimiting(accountProtection);
 // SEC-27..29: HSTS, response security headers and CORS restricted to configured origins (none by default).
 builder.Services.AddOpenCampusTransportSecurity(builder.Configuration);
+// Compressed API payloads: Brotli then gzip, negotiated by the client, for the JSON shapes only. PDF is already
+// compressed and is streamed as is. Response bodies never reflect a secret alongside user input, so BREACH does not apply.
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProvider>();
+    options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>();
+    options.MimeTypes = ["application/json", "application/problem+json", "text/plain"];
+});
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<IdentityDbContext>()
@@ -143,6 +152,7 @@ if (!app.Environment.IsEnvironment("Test"))
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseExceptionHandler();
 app.UseMiddleware<SecurityHeadersMiddleware>();
+app.UseResponseCompression();
 app.UseStatusCodePages();
 app.UseSerilogRequestLogging();
 

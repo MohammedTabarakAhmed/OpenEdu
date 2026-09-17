@@ -1,5 +1,7 @@
 import { formatDate, formatNumber, formatPercent } from '@angular/common';
-import { Component, inject, Injectable, input, output, Pipe, PipeTransform } from '@angular/core';
+import { Component, DestroyRef, inject, Injectable, input, output, Pipe, PipeTransform } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { PresentableError } from '../core/api/problem';
 import { I18nService, Language, TranslatePipe } from '../core/i18n/i18n.service';
 import { ResourceKey } from '../core/i18n/resources';
@@ -80,7 +82,13 @@ export class BilingualPipe implements PipeTransform {
   imports: [TranslatePipe, LocaleNumberPipe],
   template: `
     @if (state().loading()) {
-      <p class="text-secondary" role="status" data-testid="state-loading">{{ 'common.loading' | t }}</p>
+      <!-- Loading skeleton: three placeholder rows shaped like the table that follows; the label is read, the bars are not. -->
+      <div class="placeholder-glow py-2" role="status" [attr.aria-label]="'common.loading' | t" data-testid="state-loading">
+        <span class="visually-hidden">{{ 'common.loading' | t }}</span>
+        <span class="placeholder col-12 mb-2" aria-hidden="true"></span>
+        <span class="placeholder col-10 mb-2" aria-hidden="true"></span>
+        <span class="placeholder col-7" aria-hidden="true"></span>
+      </div>
     } @else if (state().error(); as error) {
       <div class="alert alert-danger" role="alert" data-testid="state-error">
         {{ 'common.loadFailed' | t }} {{ error.message }}
@@ -146,20 +154,38 @@ export class SubmitError {
   readonly error = input<PresentableError | null>(null);
 }
 
-/** A search box that emits on submit, keeping list pages free of duplicate form plumbing. */
+/**
+ * A search box that emits on submit and, debounced, while typing — so a list narrows as the user types without a
+ * request per keystroke. Kept here so list pages stay free of duplicate form plumbing.
+ */
 @Component({
   selector: 'app-search-box',
   imports: [TranslatePipe],
   template: `
     <form class="d-flex gap-2" role="search" (submit)="$event.preventDefault(); search.emit(value)">
       <label class="visually-hidden" [for]="id()">{{ 'common.search' | t }}</label>
-      <input class="form-control form-control-sm" [id]="id()" type="search" [value]="value" (input)="value = $any($event.target).value" [placeholder]="'common.search' | t" />
+      <input class="form-control form-control-sm" [id]="id()" type="search" [value]="value" (input)="typed($any($event.target).value)" [placeholder]="'common.search' | t" />
       <button class="btn btn-outline-primary btn-sm" type="submit">{{ 'common.search' | t }}</button>
     </form>
   `,
 })
 export class SearchBox {
+  /** Quiet period after the last keystroke before a typed value is emitted. */
+  static readonly DebounceMs = 300;
+
   readonly id = input('search');
   readonly search = output<string>();
   protected value = '';
+  private readonly typing = new Subject<string>();
+
+  constructor() {
+    this.typing
+      .pipe(debounceTime(SearchBox.DebounceMs), distinctUntilChanged(), takeUntilDestroyed(inject(DestroyRef)))
+      .subscribe((term) => this.search.emit(term));
+  }
+
+  protected typed(term: string): void {
+    this.value = term;
+    this.typing.next(term.trim());
+  }
 }
