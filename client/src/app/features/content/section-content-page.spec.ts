@@ -6,6 +6,7 @@ import { ConfirmService } from '../../shared/ui';
 import { BlobSaver } from './content.api';
 import { ContentItem, SectionContent } from './content.models';
 import { SectionContentPage } from './section-content-page';
+import { expectAccessibleControls } from '../../shared/accessibility.spec-support';
 
 function item(overrides: Partial<ContentItem> = {}): ContentItem {
   return {
@@ -69,6 +70,7 @@ describe('SectionContentPage (15.3 content delivery, SEC-12 scope from the serve
     expect(element('unit-form')).toBeNull();
     expect(element('publish-i1')).toBeNull();
     expect(element('remove-item-i1')).toBeNull();
+    expectAccessibleControls(fixture.nativeElement); // NFR-09
   });
 
   it('shows a manager the controls, the draft badge and the upload input', async () => {

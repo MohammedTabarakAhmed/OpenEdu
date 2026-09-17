@@ -7,6 +7,7 @@ import { SessionService } from './core/auth/session.service';
 import { BOOTSTRAP_LINK_ID } from './core/i18n/i18n.service';
 import { ar } from './core/i18n/resources';
 import { authenticated } from './core/auth/session.service.spec';
+import { expectAccessibleControls } from './shared/accessibility.spec-support';
 
 describe('App', () => {
   beforeEach(async () => {
@@ -29,6 +30,7 @@ describe('App', () => {
     await fixture.whenStable();
 
     expect(element(fixture, 'api-status')?.textContent).toContain('Healthy');
+    expectAccessibleControls(fixture.nativeElement); // NFR-09
   });
 
   it('shows the API as unreachable when the health request fails', async () => {

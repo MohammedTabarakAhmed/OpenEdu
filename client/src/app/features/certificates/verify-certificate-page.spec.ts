@@ -7,6 +7,7 @@ import { provideRouter, Router } from '@angular/router';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { CertificateVerification } from './certificates.api';
 import { VerifyCertificatePage } from './verify-certificate-page';
+import { expectAccessibleControls } from '../../shared/accessibility.spec-support';
 
 function verification(): CertificateVerification {
   return {
@@ -47,6 +48,7 @@ describe('VerifyCertificatePage (15.4 anonymous verification)', () => {
 
     expect(element('verify-form')).not.toBeNull();
     http.expectNone((r) => r.url.startsWith('/api/v1/certificates/verify/'));
+    expectAccessibleControls(fixture.nativeElement); // NFR-09
   });
 
   it('looks up a code taken from the route and shows what it certifies, without any identifiers', async () => {

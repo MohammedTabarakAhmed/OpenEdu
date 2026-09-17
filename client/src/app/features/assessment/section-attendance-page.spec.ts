@@ -5,6 +5,7 @@ import { provideRouter } from '@angular/router';
 import { SectionSummary } from '../content/content.models';
 import { EnrolledLearner, SectionAttendanceResponse, SessionRegisterResponse, SessionSummary } from './assessment.models';
 import { SectionAttendancePage } from './section-attendance-page';
+import { expectAccessibleControls } from '../../shared/accessibility.spec-support';
 
 const section: SectionSummary = {
   id: 's1', code: 'CS101-A', termName: '2026 Autumn', status: 'Open', courseId: 'c1',
@@ -57,6 +58,7 @@ describe('SectionAttendancePage (15.3 attendance, BR-13, SEC-12 scope from the s
 
     expect(element('learner-summary-table')).toBeNull();
     expect(element('my-attendance')?.textContent).toContain('100');
+    expectAccessibleControls(fixture.nativeElement); // NFR-09
   });
 
   it('shows a manager the learner summary table and opens a session register to record status', async () => {
@@ -70,6 +72,7 @@ describe('SectionAttendancePage (15.3 attendance, BR-13, SEC-12 scope from the s
 
     expect(element('register-panel')).not.toBeNull();
     expect(element('save-register')).not.toBeNull();
+    expectAccessibleControls(fixture.nativeElement); // NFR-09: the per-learner status selects are named
   });
 
   it('records the register through the recording route (BR-13 decided by the aggregate)', async () => {

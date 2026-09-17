@@ -49,7 +49,8 @@
   --bs-warning-rgb: 200, 149, 43;
   --bs-body-font-family: var(--oc-font-latin);
   --bs-code-color: var(--oc-deep-strong);
-  --bs-focus-ring-color: rgba(15, 76, 92, 0.25);
+  /* NFR-09: a focus ring visible against paper and sky surfaces for keyboard users. */
+  --bs-focus-ring-color: rgba(15, 76, 92, 0.5);
 }
 
 html[dir='rtl'] {
@@ -162,7 +163,8 @@ body {
 
 .badge.text-bg-primary { background-color: var(--oc-deep) !important; }
 .badge.text-bg-success { background-color: var(--oc-deep) !important; }
-.badge.text-bg-warning { background-color: var(--oc-amber) !important; color: #fff !important; }
+/* NFR-09: white on amber is 2.7:1; ink on amber is 5.7:1 (WCAG AA). */
+.badge.text-bg-warning { background-color: var(--oc-amber) !important; color: var(--oc-ink) !important; }
 .badge.text-bg-danger { background-color: var(--oc-signal) !important; }
 
 /* ----- Navigation: the horizon marks the active destination ----- */

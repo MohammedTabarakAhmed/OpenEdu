@@ -141,7 +141,7 @@
                         @if (markingId() === sub.id) {
                           <form class="d-flex gap-1 align-items-start" [formGroup]="markForm" (ngSubmit)="mark(a)" novalidate>
                             <input class="form-control form-control-sm" style="width: 5rem" type="number" step="0.01" formControlName="score" [attr.aria-label]="'assessment.score' | t" />
-                            <input class="form-control form-control-sm" formControlName="feedback" [placeholder]="'assessment.feedback' | t" />
+                            <input class="form-control form-control-sm" formControlName="feedback" [placeholder]="'assessment.feedback' | t" [attr.aria-label]="'assessment.feedback' | t" />
                             <button class="btn btn-primary btn-sm" type="submit" [disabled]="busy()" data-testid="mark-submit">{{ 'common.save' | t }}</button>
                             <button class="btn btn-outline-secondary btn-sm" type="button" (click)="markingId.set(null)">{{ 'common.cancel' | t }}</button>
                           </form>

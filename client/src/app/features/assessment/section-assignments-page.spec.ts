@@ -7,6 +7,7 @@ import { ConfirmService } from '../../shared/ui';
 import { BlobSaver } from '../content/content.api';
 import { AssignmentItem, SectionAssignmentsResponse, SubmissionItem } from './assessment.models';
 import { SectionAssignmentsPage } from './section-assignments-page';
+import { expectAccessibleControls } from '../../shared/accessibility.spec-support';
 
 const section: SectionSummary = {
   id: 's1', code: 'CS101-A', termName: '2026 Autumn', status: 'Open', courseId: 'c1',
@@ -72,6 +73,7 @@ describe('SectionAssignmentsPage (15.3 assessment, SEC-12 scope from the server)
     expect(element('new-assignment')).toBeNull();
     expect(element('publish-a1')).toBeNull();
     expect(element('submit-form-a1')).not.toBeNull();
+    expectAccessibleControls(fixture.nativeElement); // NFR-09
   });
 
   it('shows a manager the publication controls, submission counts and submissions table', async () => {
@@ -99,6 +101,8 @@ describe('SectionAssignmentsPage (15.3 assessment, SEC-12 scope from the server)
     fixture.detectChanges();
 
     (element('mark-sub1') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expectAccessibleControls(fixture.nativeElement); // NFR-09: score and feedback inputs are named
     fixture.detectChanges();
     (element('mark-submit') as HTMLButtonElement).click();
 

@@ -5,6 +5,7 @@ import { provideRouter } from '@angular/router';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { ar, en } from '../../core/i18n/resources';
 import { PrivacyNoticePage } from './privacy-notice-page';
+import { expectAccessibleControls } from '../../shared/accessibility.spec-support';
 
 describe('PrivacyNoticePage', () => {
   beforeAll(() => registerLocaleData(localeAr));
@@ -21,7 +22,7 @@ describe('PrivacyNoticePage', () => {
     expect(text()).toContain(en['privacy.title']);
     expect(text()).toContain(en['privacy.retention.body']);
     expect(text()).toContain(en['privacy.notices.body']);
-    expect(fixture.nativeElement.querySelectorAll('h2').length).toBe(7);
+    expect(fixture.nativeElement.querySelectorAll('h2').length).toBe(8);
 
     TestBed.inject(I18nService).use('ar');
     fixture.detectChanges();
@@ -29,5 +30,6 @@ describe('PrivacyNoticePage', () => {
     expect(text()).toContain(ar['privacy.title']);
     expect(text()).toContain(ar['privacy.retention.body']);
     expect(text()).not.toContain(en['privacy.title']);
+    expectAccessibleControls(fixture.nativeElement); // NFR-09
   });
 });

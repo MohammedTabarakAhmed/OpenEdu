@@ -5,6 +5,7 @@ import { provideRouter } from '@angular/router';
 import { PagedResponse } from '../../core/api/api.models';
 import { CatalogueEntry } from '../admin/admin.models';
 import { CataloguePage } from './catalogue-page';
+import { expectAccessibleControls } from '../../shared/accessibility.spec-support';
 
 function entry(overrides: Partial<CatalogueEntry> = {}): CatalogueEntry {
   return {
@@ -56,6 +57,7 @@ describe('CataloguePage (15.3 learner self-service)', () => {
     // A full section offers no enrolment (BR-01 would refuse it anyway).
     expect((element('enrol-CS305') as HTMLButtonElement).disabled).toBe(true);
     expect(element('enrol-CS305')?.textContent).toContain('Full');
+    expectAccessibleControls(fixture.nativeElement); // NFR-09
   });
 
   it('enrols through api/v1/me/enrolments and reloads the catalogue', () => {

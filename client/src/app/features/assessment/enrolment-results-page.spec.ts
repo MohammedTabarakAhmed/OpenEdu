@@ -5,6 +5,7 @@ import { BlobSaver } from '../content/content.api';
 import { certificate } from '../certificates/my-certificates-page.spec';
 import { LearnerResultsResponse } from './assessment.models';
 import { EnrolmentResultsPage } from './enrolment-results-page';
+import { expectAccessibleControls } from '../../shared/accessibility.spec-support';
 
 function results(overrides: Partial<LearnerResultsResponse> = {}): LearnerResultsResponse {
   return {
@@ -45,6 +46,7 @@ describe('EnrolmentResultsPage (15.3 released results, BR-06)', () => {
 
     expect(element('not-released')).not.toBeNull();
     expect(element('results-table')).toBeNull();
+    expectAccessibleControls(fixture.nativeElement); // NFR-09
   });
 
   it('shows the released entries and weighted final grade', async () => {

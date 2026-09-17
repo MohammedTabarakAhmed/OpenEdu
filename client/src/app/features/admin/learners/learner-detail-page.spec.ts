@@ -8,6 +8,7 @@ import { certificate } from '../../certificates/my-certificates-page.spec';
 import { BlobSaver } from '../../content/content.api';
 import { Enrolment, Learner } from '../admin.models';
 import { LearnerDetailPage } from './learner-detail-page';
+import { expectAccessibleControls } from '../../../shared/accessibility.spec-support';
 
 function learner(): Learner {
   return {
@@ -73,6 +74,7 @@ describe('LearnerDetailPage certificate actions (Increment 6)', () => {
     expect(element('issue-certificate-e-done')).not.toBeNull();
     expect(element('issue-certificate-e-issued')).toBeNull();
     expect(element('download-certificate-e-issued')).not.toBeNull();
+    expectAccessibleControls(fixture.nativeElement); // NFR-09
   });
 
   it('hides issuance from a caller without sis.certificate.issue but still allows download', async () => {

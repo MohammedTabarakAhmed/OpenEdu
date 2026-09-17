@@ -5,6 +5,7 @@ import { provideRouter } from '@angular/router';
 import { ConfirmService } from '../../shared/ui';
 import { GradebookResponse } from './assessment.models';
 import { SectionGradingPage } from './section-grading-page';
+import { expectAccessibleControls } from '../../shared/accessibility.spec-support';
 
 function gradebook(overrides: Partial<GradebookResponse> = {}): GradebookResponse {
   return {
@@ -54,6 +55,7 @@ describe('SectionGradingPage (15.3 grading, BR-05, BR-07, BR-06)', () => {
     expect(element('gradebook-table')).not.toBeNull();
     expect(element('ungraded-notice')?.textContent).toContain('1');
     expect((element('release') as HTMLButtonElement).disabled).toBe(true);
+    expectAccessibleControls(fixture.nativeElement); // NFR-09
   });
 
   it('records a score through the inline editor (BR-05)', async () => {

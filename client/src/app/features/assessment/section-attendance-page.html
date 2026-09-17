@@ -65,7 +65,7 @@
                     <tr [attr.data-testid]="'register-row-' + l.userId">
                       <td>{{ l.learnerNumber }} — {{ l.fullNameEn }}</td>
                       <td>
-                        <select class="form-select form-select-sm" [attr.data-testid]="'status-' + l.userId" (change)="setStatus(l.userId, $any($event.target).value)">
+                        <select class="form-select form-select-sm" [attr.data-testid]="'status-' + l.userId" [attr.aria-label]="('assessment.status' | t) + ': ' + l.learnerNumber" (change)="setStatus(l.userId, $any($event.target).value)">
                           <option value="">{{ 'assessment.notRecorded' | t }}</option>
                           @for (status of statuses; track status) {
                             <option [value]="status" [selected]="draft()[l.userId] === status">{{ 'assessment.attendance.' + status | t }}</option>

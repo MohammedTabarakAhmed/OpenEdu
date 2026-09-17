@@ -5,6 +5,7 @@ import { provideRouter } from '@angular/router';
 import { BlobSaver } from '../content/content.api';
 import { Certificate } from './certificates.api';
 import { MyCertificatesPage } from './my-certificates-page';
+import { expectAccessibleControls } from '../../shared/accessibility.spec-support';
 
 export function certificate(overrides: Partial<Certificate> = {}): Certificate {
   return {
@@ -43,6 +44,7 @@ describe('MyCertificatesPage (15.3 certificate listing/download)', () => {
 
     expect(element('state-empty')).not.toBeNull();
     expect(element('certificates-table')).toBeNull();
+    expectAccessibleControls(fixture.nativeElement); // NFR-09
   });
 
   it('lists the certificates with their verification code and downloads the PDF under a code-derived name', () => {

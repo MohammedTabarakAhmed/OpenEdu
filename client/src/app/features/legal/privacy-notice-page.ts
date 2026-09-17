@@ -46,6 +46,9 @@ import { LocaleDatePipe } from '../../shared/ui';
               <li>{{ 'privacy.protection.audit' | t }}</li>
             </ul>
 
+            <h2 class="h6 mt-4">{{ 'privacy.cookies.title' | t }}</h2>
+            <p data-testid="privacy-cookies">{{ 'privacy.cookies.body' | t }}</p>
+
             <h2 class="h6 mt-4">{{ 'privacy.retention.title' | t }}</h2>
             <p data-testid="privacy-retention">{{ 'privacy.retention.body' | t }}</p>
 
