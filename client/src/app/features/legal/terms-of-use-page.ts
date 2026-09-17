@@ -14,27 +14,27 @@ import { OperatorDetailsBlock } from './operator';
 @Component({
   imports: [RouterLink, TranslatePipe, LocaleDatePipe, Mark, OperatorDetailsBlock],
   template: `
-    <div class="row justify-content-center">
-      <div class="col-12 col-lg-8">
-        <article class="card">
-          <div class="card-body p-4">
-            <p class="oc-brand mb-1"><app-mark [size]="28" /> {{ 'app.title' | t }}</p>
-            <h1 class="h4 mb-0" data-testid="terms-title">{{ 'terms.title' | t }}</h1>
+    <div class="oc-legal">
+      <article class="card">
+        <div class="card-body">
+          <header class="oc-legal-masthead">
+            <p class="oc-brand mb-2"><app-mark [size]="28" /> {{ 'app.title' | t }}</p>
+            <h1 class="h3 mb-0" data-testid="terms-title">{{ 'terms.title' | t }}</h1>
             <span class="oc-horizon" aria-hidden="true"></span>
-            <p class="text-secondary small mb-1">{{ 'privacy.updated' | t }}: {{ revised | localeDate: 'date' }}</p>
-            <p>{{ 'terms.intro' | t }}</p>
+            <p class="text-secondary small mb-3">{{ 'privacy.updated' | t }}: {{ revised | localeDate: 'date' }}</p>
+            <p class="oc-legal-lead">{{ 'terms.intro' | t }}</p>
+          </header>
 
-            @for (section of sections; track section) {
-              <h2 class="h6 mt-4">{{ 'terms.' + section + '.title' | t }}</h2>
-              <p [attr.data-testid]="'terms-' + section">{{ 'terms.' + section + '.body' | t }}</p>
-            }
+          @for (section of sections; track section) {
+            <h2 class="h6">{{ 'terms.' + section + '.title' | t }}</h2>
+            <p [attr.data-testid]="'terms-' + section">{{ 'terms.' + section + '.body' | t }}</p>
+          }
 
-            <app-operator-details />
+          <app-operator-details />
 
-            <p class="mt-4 mb-0"><a routerLink="/privacy">{{ 'privacy.title' | t }}</a></p>
-          </div>
-        </article>
-      </div>
+          <p class="text-center small mt-5 mb-0"><a routerLink="/privacy">{{ 'privacy.title' | t }}</a> &middot; <a routerLink="/verify">{{ 'verify.title' | t }}</a></p>
+        </div>
+      </article>
     </div>
   `,
 })

@@ -39,18 +39,18 @@ export const OPERATOR: OperatorDetails = {
   selector: 'app-operator-details',
   imports: [TranslatePipe],
   template: `
-    <h2 class="h6 mt-4">{{ 'legal.operator.title' | t }}</h2>
+    <h2 class="h6">{{ 'legal.operator.title' | t }}</h2>
     <p>{{ 'legal.operator.intro' | t }}</p>
-    <dl class="row mb-0" data-testid="operator-details">
-      <dt class="col-sm-4">{{ 'legal.operator.name' | t }}</dt><dd class="col-sm-8">{{ value(operator.legalNameEn, operator.legalNameAr) }}</dd>
-      <dt class="col-sm-4">{{ 'legal.operator.licence' | t }}</dt><dd class="col-sm-8">{{ value(operator.licenceNumber) }}</dd>
-      <dt class="col-sm-4">{{ 'legal.operator.address' | t }}</dt><dd class="col-sm-8">{{ value(operator.addressEn, operator.addressAr) }}</dd>
-      <dt class="col-sm-4">{{ 'legal.operator.email' | t }}</dt><dd class="col-sm-8" dir="ltr">{{ value(operator.email) }}</dd>
-      <dt class="col-sm-4">{{ 'legal.operator.phone' | t }}</dt><dd class="col-sm-8" dir="ltr">{{ value(operator.phone) }}</dd>
-      <dt class="col-sm-4">{{ 'legal.operator.dpo' | t }}</dt><dd class="col-sm-8">{{ value(operator.dataProtectionContact) }}</dd>
-      <dt class="col-sm-4">{{ 'terms.law.title' | t }}</dt><dd class="col-sm-8">{{ value(operator.jurisdictionEn, operator.jurisdictionAr) }}</dd>
+    <dl class="oc-details" data-testid="operator-details">
+      <dt>{{ 'legal.operator.name' | t }}</dt><dd>{{ value(operator.legalNameEn, operator.legalNameAr) }}</dd>
+      <dt>{{ 'legal.operator.licence' | t }}</dt><dd>{{ value(operator.licenceNumber) }}</dd>
+      <dt>{{ 'legal.operator.address' | t }}</dt><dd>{{ value(operator.addressEn, operator.addressAr) }}</dd>
+      <dt>{{ 'legal.operator.email' | t }}</dt><dd dir="ltr">{{ value(operator.email) }}</dd>
+      <dt>{{ 'legal.operator.phone' | t }}</dt><dd dir="ltr">{{ value(operator.phone) }}</dd>
+      <dt>{{ 'legal.operator.dpo' | t }}</dt><dd>{{ value(operator.dataProtectionContact) }}</dd>
+      <dt>{{ 'terms.law.title' | t }}</dt><dd>{{ value(operator.jurisdictionEn, operator.jurisdictionAr) }}</dd>
     </dl>
-    <p class="small text-secondary mt-3 mb-0">{{ 'legal.review' | t }}</p>
+    <p class="small text-secondary mt-4 mb-0">{{ 'legal.review' | t }}</p>
   `,
 })
 export class OperatorDetailsBlock {

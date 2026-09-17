@@ -24,88 +24,88 @@ export interface PrivacySection {
 @Component({
   imports: [RouterLink, TranslatePipe, LocaleDatePipe, Mark, OperatorDetailsBlock],
   template: `
-    <div class="row justify-content-center">
-      <div class="col-12 col-lg-9">
-        <article class="card">
-          <div class="card-body p-4">
-            <p class="oc-brand mb-1"><app-mark [size]="28" /> {{ 'app.title' | t }}</p>
-            <h1 class="h4 mb-0" data-testid="privacy-title">{{ 'privacy.title' | t }}</h1>
+    <div class="oc-legal">
+      <article class="card">
+        <div class="card-body">
+          <header class="oc-legal-masthead">
+            <p class="oc-brand mb-2"><app-mark [size]="28" /> {{ 'app.title' | t }}</p>
+            <h1 class="h3 mb-0" data-testid="privacy-title">{{ 'privacy.title' | t }}</h1>
             <span class="oc-horizon" aria-hidden="true"></span>
-            <p class="text-secondary small mb-1">{{ 'privacy.updated' | t }}: {{ revised | localeDate: 'date' }}</p>
-            <p>{{ 'privacy.intro' | t }}</p>
+            <p class="text-secondary small mb-3">{{ 'privacy.updated' | t }}: {{ revised | localeDate: 'date' }}</p>
+            <p class="oc-legal-lead">{{ 'privacy.intro' | t }}</p>
+          </header>
 
-            <div class="alert alert-secondary" role="note" data-testid="privacy-summary">
-              <strong>{{ 'privacy.summary.title' | t }}.</strong> {{ 'privacy.summary.body' | t }}
-            </div>
-
-            <nav [attr.aria-label]="'privacy.title' | t" class="small mb-4">
-              <ol class="mb-0">
-                @for (s of sections; track s.key) {
-                  <li><a [href]="'#privacy-' + s.key">{{ 'privacy.' + s.key + '.title' | t }}</a></li>
-                }
-              </ol>
-            </nav>
-
-            @for (s of sections; track s.key; let index = $index) {
-              <section [id]="'privacy-' + s.key" [attr.data-testid]="'privacy-' + s.key">
-                <h2 class="h6 mt-4">{{ index + 1 }}. {{ 'privacy.' + s.key + '.title' | t }}</h2>
-                @for (p of range(s.paragraphs); track p) {
-                  <p>{{ 'privacy.' + s.key + '.p' + p | t }}</p>
-                }
-                @if (s.bullets > 0) {
-                  <ul>
-                    @for (b of range(s.bullets); track b) {
-                      <li>{{ 'privacy.' + s.key + '.b' + b | t }}</li>
-                    }
-                  </ul>
-                }
-                @switch (s.table) {
-                  @case ('data') {
-                    <div class="table-responsive">
-                      <table class="table table-sm align-top" data-testid="privacy-data-table">
-                        <thead><tr><th scope="col">{{ 'privacy.table.category' | t }}</th><th scope="col">{{ 'privacy.table.source' | t }}</th><th scope="col">{{ 'privacy.table.why' | t }}</th></tr></thead>
-                        <tbody>
-                          @for (i of range(dataRows); track i) {
-                            <tr><td>{{ 'privacy.data.' + i + '.category' | t }}</td><td>{{ 'privacy.data.' + i + '.source' | t }}</td><td>{{ 'privacy.data.' + i + '.why' | t }}</td></tr>
-                          }
-                        </tbody>
-                      </table>
-                    </div>
-                  }
-                  @case ('purpose') {
-                    <div class="table-responsive">
-                      <table class="table table-sm align-top" data-testid="privacy-purpose-table">
-                        <thead><tr><th scope="col">{{ 'privacy.table.purpose' | t }}</th><th scope="col">{{ 'privacy.table.basis' | t }}</th></tr></thead>
-                        <tbody>
-                          @for (i of range(purposeRows); track i) {
-                            <tr><td>{{ 'privacy.purpose.' + i + '.purpose' | t }}</td><td>{{ 'privacy.purpose.' + i + '.basis' | t }}</td></tr>
-                          }
-                        </tbody>
-                      </table>
-                    </div>
-                  }
-                  @case ('retention') {
-                    <div class="table-responsive">
-                      <table class="table table-sm align-top" data-testid="privacy-retention-table">
-                        <thead><tr><th scope="col">{{ 'privacy.table.category' | t }}</th><th scope="col">{{ 'privacy.table.period' | t }}</th></tr></thead>
-                        <tbody>
-                          @for (i of range(retentionRows); track i) {
-                            <tr><td>{{ 'privacy.retention.' + i + '.category' | t }}</td><td>{{ 'privacy.retention.' + i + '.period' | t }}</td></tr>
-                          }
-                        </tbody>
-                      </table>
-                    </div>
-                  }
-                }
-              </section>
-            }
-
-            <app-operator-details />
-
-            <p class="mt-4 mb-0"><a routerLink="/terms">{{ 'terms.title' | t }}</a> &middot; <a routerLink="/verify">{{ 'verify.title' | t }}</a></p>
+          <div class="alert alert-secondary mt-3" role="note" data-testid="privacy-summary">
+            <strong>{{ 'privacy.summary.title' | t }}.</strong> {{ 'privacy.summary.body' | t }}
           </div>
-        </article>
-      </div>
+
+          <nav [attr.aria-label]="'privacy.title' | t" class="oc-toc small">
+            <ol>
+              @for (s of sections; track s.key) {
+                <li><a [href]="'#privacy-' + s.key">{{ 'privacy.' + s.key + '.title' | t }}</a></li>
+              }
+            </ol>
+          </nav>
+
+          @for (s of sections; track s.key; let index = $index) {
+            <section [id]="'privacy-' + s.key" [attr.data-testid]="'privacy-' + s.key">
+              <h2 class="h6">{{ index + 1 }}. {{ 'privacy.' + s.key + '.title' | t }}</h2>
+              @for (p of range(s.paragraphs); track p) {
+                <p>{{ 'privacy.' + s.key + '.p' + p | t }}</p>
+              }
+              @if (s.bullets > 0) {
+                <ul>
+                  @for (b of range(s.bullets); track b) {
+                    <li>{{ 'privacy.' + s.key + '.b' + b | t }}</li>
+                  }
+                </ul>
+              }
+              @switch (s.table) {
+                @case ('data') {
+                  <div class="table-responsive">
+                    <table class="table table-sm align-top" data-testid="privacy-data-table">
+                      <thead><tr><th scope="col">{{ 'privacy.table.category' | t }}</th><th scope="col">{{ 'privacy.table.source' | t }}</th><th scope="col">{{ 'privacy.table.why' | t }}</th></tr></thead>
+                      <tbody>
+                        @for (i of range(dataRows); track i) {
+                          <tr><td>{{ 'privacy.data.' + i + '.category' | t }}</td><td>{{ 'privacy.data.' + i + '.source' | t }}</td><td>{{ 'privacy.data.' + i + '.why' | t }}</td></tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+                @case ('purpose') {
+                  <div class="table-responsive">
+                    <table class="table table-sm align-top" data-testid="privacy-purpose-table">
+                      <thead><tr><th scope="col">{{ 'privacy.table.purpose' | t }}</th><th scope="col">{{ 'privacy.table.basis' | t }}</th></tr></thead>
+                      <tbody>
+                        @for (i of range(purposeRows); track i) {
+                          <tr><td>{{ 'privacy.purpose.' + i + '.purpose' | t }}</td><td>{{ 'privacy.purpose.' + i + '.basis' | t }}</td></tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+                @case ('retention') {
+                  <div class="table-responsive">
+                    <table class="table table-sm align-top" data-testid="privacy-retention-table">
+                      <thead><tr><th scope="col">{{ 'privacy.table.category' | t }}</th><th scope="col">{{ 'privacy.table.period' | t }}</th></tr></thead>
+                      <tbody>
+                        @for (i of range(retentionRows); track i) {
+                          <tr><td>{{ 'privacy.retention.' + i + '.category' | t }}</td><td>{{ 'privacy.retention.' + i + '.period' | t }}</td></tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+              }
+            </section>
+          }
+
+          <app-operator-details />
+
+          <p class="text-center small mt-5 mb-0"><a routerLink="/terms">{{ 'terms.title' | t }}</a> &middot; <a routerLink="/verify">{{ 'verify.title' | t }}</a></p>
+        </div>
+      </article>
     </div>
   `,
 })
