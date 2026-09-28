@@ -44,7 +44,7 @@ public sealed class CertificatesController(CertificateService certificates) : Co
     }
 
     /// <summary>
-    /// Anonymous verification by code (15.4, justified in the README). Rate-limited like the other anonymous
+    /// Anonymous verification by code (15.4, justified in BRIEFER.md). Rate-limited like the other anonymous
     /// endpoints (SEC-16); the code space (≈99 bits) makes enumeration impractical regardless. The answer names what
     /// the certificate certifies and nothing internal.
     /// </summary>
