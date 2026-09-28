@@ -6,7 +6,7 @@ using OpenCampus.Sis.Domain.Learners;
 namespace OpenCampus.Sis.Application.Learners;
 
 /// <summary>Learner listing, creation, retrieval and amendment (15.3 "Learner and enrolment").</summary>
-public sealed class LearnerService(ILearnerRepository learners, IUserDirectory users, ISisUnitOfWork unitOfWork)
+public sealed class LearnerService(ILearnerRepository learners, IUserDirectory users, ISisUnitOfWork unitOfWork, ILearnerNumberGenerator numbers)
 {
     /// <summary>The Identity role a learner's account must hold (2.3).</summary>
     public const string LearnerRole = "Learner";
@@ -40,6 +40,37 @@ public sealed class LearnerService(ILearnerRepository learners, IUserDirectory u
         return learner is null
             ? Result.Failure<LearnerResponse>(SisErrors.LearnerNotFound)
             : Result.Success(ToResponse(learner, await users.FindAsync(learner.UserId, cancellationToken), includeNationalId: true));
+    }
+
+    /// <summary>
+    /// Identity→SIS (Increment 7): the learner record behind a self-registered, already-activated learner account, with a
+    /// generated number and no personal details (the learner or a registrar completes them later). Idempotent: an
+    /// existing record is returned untouched. The account is read through the Identity contract in its committed state.
+    /// </summary>
+    public async Task<Result<LearnerResponse>> EnsureSelfRegisteredAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var user = await users.FindAsync(userId, cancellationToken);
+        if (user is null || !user.IsActive)
+        {
+            return Result.Failure<LearnerResponse>(SisErrors.UnknownUser("UserId"));
+        }
+
+        if (!user.Roles.Contains(LearnerRole, StringComparer.OrdinalIgnoreCase))
+        {
+            return Result.Failure<LearnerResponse>(SisErrors.UserLacksRole("UserId", LearnerRole));
+        }
+
+        var existing = await learners.FindByUserIdAsync(userId, cancellationToken);
+        if (existing is not null)
+        {
+            return Result.Success(ToResponse(existing, user, includeNationalId: false));
+        }
+
+        var learner = Learner.Create(userId, await numbers.NextAsync(cancellationToken), null, null, Gender.Unspecified, null);
+        learners.Add(learner);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Result.Success(ToResponse(learner, user, includeNationalId: false));
     }
 
     public async Task<Result<LearnerResponse>> CreateAsync(CreateLearnerRequest request, CancellationToken cancellationToken)

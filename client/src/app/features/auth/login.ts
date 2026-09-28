@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Mark } from '../../shared/brand';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { landingPathFor } from '../../core/auth/auth.models';
 import { SessionService } from '../../core/auth/session.service';
 import { TranslatePipe } from '../../core/i18n/i18n.service';
@@ -10,7 +10,7 @@ import { ResourceKey } from '../../core/i18n/resources';
 
 /** Credential step followed, where required, by the multi-factor step (SEC-09). */
 @Component({
-  imports: [FormsModule, TranslatePipe, Mark],
+  imports: [FormsModule, RouterLink, TranslatePipe, Mark],
   templateUrl: './login.html',
 })
 export class Login {

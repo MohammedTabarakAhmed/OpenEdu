@@ -13,4 +13,9 @@ public static class AuditEventTypes
     public const string SessionRevoked = "session.revoked";
     public const string SessionReuseDetected = "session.reuse_detected";
     public const string UserDeactivated = "user.deactivated";
+    public const string UserRegistered = "user.registered";
+    public const string EmailVerified = "user.email_verified";
+    public const string RegistrationApproved = "user.registration_approved";
+    public const string RegistrationRejected = "user.registration_rejected";
+    public const string RegistrationDuplicateEmail = "user.registration_duplicate_email";
 }

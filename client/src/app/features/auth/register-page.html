@@ -1,0 +1,105 @@
+<div class="row justify-content-center">
+  <div class="col-12 col-md-8 col-lg-6">
+    <div class="card">
+    <div class="card-body p-4">
+    <p class="oc-brand mb-1"><app-mark [size]="28" /> {{ 'app.title' | t }}</p>
+    <h1 class="h4 mb-0">{{ 'register.title' | t }}</h1>
+    <span class="oc-horizon" aria-hidden="true"></span>
+
+    @if (errorKey(); as key) {
+      <div class="alert alert-danger" role="alert" aria-live="assertive" data-testid="register-error">{{ key | t }}</div>
+    }
+
+    @switch (step()) {
+      @case ('role') {
+        <p class="text-secondary" id="register-role-question">{{ 'register.role.question' | t }}</p>
+        <div class="d-grid gap-2" role="group" aria-labelledby="register-role-question" data-testid="register-roles">
+          @for (type of accountTypes; track type) {
+            <button class="card text-start p-3 oc-choice" type="button" (click)="choose(type)" [attr.data-testid]="'register-role-' + type">
+              <span class="fw-semibold d-block">{{ 'register.role.' + type + '.title' | t }}</span>
+              <span class="small text-secondary d-block">{{ 'register.role.' + type + '.description' | t }}</span>
+              @if (needsApproval(type)) {
+                <span class="small d-block mt-1"><span class="badge text-bg-warning">{{ 'register.role.approvalNote' | t }}</span></span>
+              }
+            </button>
+          }
+        </div>
+        <p class="small text-secondary mt-3 mb-0">{{ 'register.haveAccount' | t }} <a routerLink="/login" data-testid="register-login">{{ 'login.title' | t }}</a></p>
+      }
+
+      @case ('form') {
+        <p class="small text-secondary" data-testid="register-chosen">
+          {{ 'register.role.chosen' | t }} <strong>{{ 'register.role.' + accountType() + '.title' | t }}</strong>
+          · <button class="btn btn-link btn-sm p-0 align-baseline" type="button" (click)="back()">{{ 'register.role.change' | t }}</button>
+        </p>
+        <form [formGroup]="form" (ngSubmit)="submit()" novalidate data-testid="register-form">
+          <app-submit-error [error]="error()" />
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label" for="register-userName">{{ 'users.userName' | t }}</label>
+              <input class="form-control" id="register-userName" formControlName="userName" autocomplete="username" dir="ltr" [class.is-invalid]="invalid('userName')" />
+              <div class="form-text">{{ 'register.userNameHint' | t }}</div>
+              <app-field-errors [messages]="errors('userName')" />
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="register-email">{{ 'users.email' | t }}</label>
+              <input class="form-control" id="register-email" type="email" formControlName="email" autocomplete="email" dir="ltr" [class.is-invalid]="invalid('email')" />
+              <app-field-errors [messages]="errors('email')" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="register-password">{{ 'login.password' | t }}</label>
+              <input class="form-control" id="register-password" type="password" formControlName="password" autocomplete="new-password" [class.is-invalid]="invalid('password')" [attr.aria-describedby]="'register-strength'" />
+              <div class="form-text" id="register-strength" data-testid="register-strength">
+                {{ 'register.passwordHint' | t }}
+                @if (password().length > 0) { · <span [class.text-danger]="strength() === 'weak'" [class.text-success]="strength() === 'strong'">{{ 'register.strength.' + strength() | t }}</span> }
+              </div>
+              <app-field-errors [messages]="errors('password')" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="register-confirmPassword">{{ 'register.confirmPassword' | t }}</label>
+              <input class="form-control" id="register-confirmPassword" type="password" formControlName="confirmPassword" autocomplete="new-password" [class.is-invalid]="invalid('confirmPassword')" />
+              @if (form.controls.confirmPassword.touched && form.hasError('passwordMismatch')) {
+                <div class="invalid-feedback d-block" role="alert" data-testid="register-mismatch">{{ 'register.error.passwordMismatch' | t }}</div>
+              }
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="register-fullNameEn">{{ 'users.fullNameEn' | t }}</label>
+              <input class="form-control" id="register-fullNameEn" formControlName="fullNameEn" autocomplete="name" dir="ltr" [class.is-invalid]="invalid('fullNameEn')" />
+              <app-field-errors [messages]="errors('fullNameEn')" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="register-fullNameAr">{{ 'users.fullNameAr' | t }}</label>
+              <input class="form-control" id="register-fullNameAr" formControlName="fullNameAr" dir="rtl" [class.is-invalid]="invalid('fullNameAr')" />
+              <app-field-errors [messages]="errors('fullNameAr')" />
+            </div>
+          </div>
+          <p class="small text-secondary mt-3">
+            {{ 'register.legal' | t }} <a routerLink="/terms">{{ 'app.terms' | t }}</a> · <a routerLink="/privacy">{{ 'app.privacy' | t }}</a>
+          </p>
+          <button class="btn btn-primary w-100" type="submit" [disabled]="busy()" data-testid="register-submit">{{ 'register.submit' | t }}</button>
+        </form>
+      }
+
+      @case ('sent') {
+        <div class="alert alert-success" role="status" data-testid="register-sent">
+          <strong>{{ 'register.sent.title' | t }}</strong>
+          <div>{{ 'register.sent.body' | t }} <span dir="ltr" class="fw-semibold">{{ sentTo() }}</span></div>
+          @if (needsApproval(accountType()!)) {
+            <div class="mt-1 small">{{ 'register.sent.approval' | t }}</div>
+          }
+        </div>
+        @if (resent()) {
+          <p class="small text-secondary" role="status" data-testid="register-resent">{{ 'register.sent.resent' | t }}</p>
+        }
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+          <button class="btn btn-outline-secondary btn-sm" type="button" (click)="resend()" [disabled]="resendIn() > 0 || busy()" data-testid="register-resend">
+            {{ 'register.sent.resend' | t }}@if (resendIn() > 0) { ({{ resendIn() }})}
+          </button>
+          <a routerLink="/login" class="btn btn-link btn-sm" data-testid="register-to-login">{{ 'register.sent.toLogin' | t }}</a>
+        </div>
+      }
+    }
+    </div>
+    </div>
+  </div>
+</div>

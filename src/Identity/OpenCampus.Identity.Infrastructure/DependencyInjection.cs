@@ -3,8 +3,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using OpenCampus.Identity.Application.Abstractions;
+using OpenCampus.Identity.Application.External;
 using OpenCampus.Identity.Application.Provisioning;
+using OpenCampus.Identity.Application.Registration;
 using OpenCampus.Identity.Application.Security;
+using OpenCampus.Identity.Infrastructure.External;
 using OpenCampus.Identity.Infrastructure.Persistence;
 using OpenCampus.Identity.Infrastructure.Persistence.Repositories;
 using OpenCampus.Identity.Infrastructure.Security;
@@ -43,6 +46,18 @@ public static class DependencyInjection
             .Bind(configuration.GetSection(ProvisioningOptions.SectionName))
             .Validate(o => o.Validate(), "Provisioning configuration is invalid: administrator user name, e-mail and credentials file path are required.")
             .ValidateOnStart();
+
+        // Increment 7: self-registration switch, link origin and token lifetimes; the e-mail adapter is the local EXT-01
+        // pattern (CON-04), writing the same email.jsonl as the SIS adapter under the shared "Notification" section.
+        services.AddOptions<RegistrationOptions>()
+            .Bind(configuration.GetSection(RegistrationOptions.SectionName))
+            .Validate(o => o.Validate(), "Registration configuration is invalid: ClientBaseUrl must be an absolute http(s) URL, VerificationLifetime between 5 minutes and 7 days, and ResendCooldown non-negative and shorter than the lifetime.")
+            .ValidateOnStart();
+        services.AddOptions<NotificationOptions>()
+            .Bind(configuration.GetSection(NotificationOptions.SectionName))
+            .Validate(o => o.Validate(), "Notification configuration is invalid: Implementation must be 'Local', with an output path and a sender identity.")
+            .ValidateOnStart();
+        services.AddSingleton<IEmailDispatcher>(sp => new LocalEmailDispatcher(sp.GetRequiredService<IOptions<NotificationOptions>>(), contentRootPath, sp.GetRequiredService<TimeProvider>()));
 
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddSingleton<IRefreshTokenGenerator, RefreshTokenGenerator>();

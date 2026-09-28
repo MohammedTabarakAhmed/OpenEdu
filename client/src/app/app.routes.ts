@@ -16,6 +16,16 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/login').then((m) => m.Login),
   },
   {
+    // Increment 7: self-registration; the verification link lands on a page that posts the token only on request.
+    path: 'register',
+    canActivate: [anonymousOnlyGuard],
+    loadComponent: () => import('./features/auth/register-page').then((m) => m.RegisterPage),
+  },
+  {
+    path: 'verify-email',
+    loadComponent: () => import('./features/auth/verify-email-page').then((m) => m.VerifyEmailPage),
+  },
+  {
     // 15.4: certificate verification is anonymous — no guard; a signed-in user may use it too.
     path: 'verify',
     loadComponent: () => import('./features/certificates/verify-certificate-page').then((m) => m.VerifyCertificatePage),

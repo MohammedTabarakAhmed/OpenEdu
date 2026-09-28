@@ -8,6 +8,12 @@ public static class RoleNames
     public const string Instructor = "Instructor";
     public const string Learner = "Learner";
 
+    public static readonly IReadOnlyList<string> All = [Administrator, Registrar, Instructor, Learner];
+
+    /// <summary>Canonical spelling of a role name supplied by a caller, or null when it is not one of the four.</summary>
+    public static string? Normalise(string? name) =>
+        All.FirstOrDefault(r => string.Equals(r, name?.Trim(), StringComparison.OrdinalIgnoreCase));
+
     public static readonly IReadOnlyDictionary<string, string> Descriptions = new Dictionary<string, string>
     {
         [Administrator] = "Full administrative authority over the catalogue, users, configuration and reporting",

@@ -6,7 +6,7 @@ import { TranslatePipe } from '../../../core/i18n/i18n.service';
 import { PageState } from '../../../shared/page-state';
 import { BilingualPipe, ConfirmService, FieldErrors, LocaleDatePipe, PageControls, SearchBox, SubmitError } from '../../../shared/ui';
 import { UsersApi } from '../admin.api';
-import { Role, User, UserSession } from '../admin.models';
+import { RegistrationStatus, Role, User, UserSession } from '../admin.models';
 
 /**
  * User administration screens over the Increment 2 interface (15.3): listing, creation, amendment,
@@ -23,7 +23,10 @@ export class UsersPage {
   protected readonly session = inject(SessionService);
 
   protected search = '';
-  protected readonly state = new PageState<User>((page, pageSize) => this.api.list({ page, pageSize, search: this.search, sort: 'userName' }));
+  protected registrationFilter: RegistrationStatus | '' = '';
+  protected readonly registrationFilters: RegistrationStatus[] = ['AwaitingVerification', 'AwaitingApproval'];
+  protected readonly state = new PageState<User>((page, pageSize) =>
+    this.api.list({ page, pageSize, search: this.search, sort: 'userName', registrationStatus: this.registrationFilter || undefined }));
   protected readonly roles = signal<Role[]>([]);
 
   protected readonly editing = signal<User | null>(null);
@@ -55,6 +58,36 @@ export class UsersPage {
   protected onSearch(term: string): void {
     this.search = term;
     this.state.load(1);
+  }
+
+  protected onRegistrationFilter(value: string): void {
+    this.registrationFilter = value as RegistrationStatus | '';
+    this.state.load(1);
+  }
+
+  protected isPending(user: User): boolean {
+    return user.registrationStatus === 'AwaitingVerification' || user.registrationStatus === 'AwaitingApproval';
+  }
+
+  /** Approval grants the requested role and activates the account (identity.role.assign). */
+  protected approve(user: User): void {
+    if (!this.confirm.confirm('users.confirmApprove')) {
+      return;
+    }
+    this.api.approveRegistration(user.id).subscribe({
+      next: () => this.state.reload(),
+      error: (failure: unknown) => this.error.set(toPresentableError(failure)),
+    });
+  }
+
+  protected reject(user: User): void {
+    if (!this.confirm.confirm('users.confirmReject')) {
+      return;
+    }
+    this.api.rejectRegistration(user.id).subscribe({
+      next: () => this.state.reload(),
+      error: (failure: unknown) => this.error.set(toPresentableError(failure)),
+    });
   }
 
   protected startCreate(): void {

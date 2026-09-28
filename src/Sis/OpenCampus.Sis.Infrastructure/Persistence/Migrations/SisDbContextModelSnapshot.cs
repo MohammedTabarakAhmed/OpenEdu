@@ -23,6 +23,9 @@ namespace OpenCampus.Sis.Infrastructure.Persistence.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.HasSequence<int>("LearnerNumberSequence", "sis")
+                .StartsAt(1000L);
+
             modelBuilder.Entity("OpenCampus.Sis.Domain.Courses.Course", b =>
                 {
                     b.Property<Guid>("Id")

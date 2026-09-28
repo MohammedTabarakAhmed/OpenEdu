@@ -55,6 +55,11 @@ internal sealed class UserRepository(IdentityDbContext db) : IUserRepository
             source = source.Where(u => u.IsActive == isActive);
         }
 
+        if (query.RegistrationStatus is { } registrationStatus)
+        {
+            source = source.Where(u => u.RegistrationStatus == registrationStatus);
+        }
+
         source = (query.Sort?.ToLowerInvariant(), query.Descending) switch
         {
             ("email", false) => source.OrderBy(u => u.Email),
@@ -104,4 +109,15 @@ internal sealed class UserRepository(IdentityDbContext db) : IUserRepository
     }
 
     public void Add(User user) => db.Users.Add(user);
+
+    public Task<User?> FindByVerificationTokenHashAsync(string tokenHash, CancellationToken cancellationToken) =>
+        db.Users.Include(u => u.Roles).SingleOrDefaultAsync(u => u.VerificationTokenHash == tokenHash, cancellationToken);
+
+    public Task<User?> FindByEmailAsync(string email, CancellationToken cancellationToken)
+    {
+        var normalised = email.Trim();
+        return db.Users.Include(u => u.Roles).SingleOrDefaultAsync(u => u.Email == normalised, cancellationToken);
+    }
+
+    public void Remove(User user) => db.Users.Remove(user);
 }

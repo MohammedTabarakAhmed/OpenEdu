@@ -65,6 +65,7 @@ builder.Services.AddScoped<IUserDirectory, IdentityUserDirectory>();
 builder.Services.AddScoped<ISectionAccess, SisSectionAccess>();
 builder.Services.AddScoped<IAssessmentOutcomes, SisAssessmentOutcomes>();
 builder.Services.AddScoped<IAuditTrail, IdentityAuditTrail>();
+builder.Services.AddScoped<ILearnerRecordProvisioner, SisLearnerRecordProvisioner>(); // Identity → SIS (Increment 7).
 
 // SEC-22 at the framework level: the multipart and request body limits mirror Storage:MaxUploadSizeBytes,
 // so an oversized upload is cut off before the application layer sees it (which enforces the same bound again).

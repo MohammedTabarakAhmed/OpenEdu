@@ -1,4 +1,5 @@
 using FluentValidation;
+using OpenCampus.Identity.Application.Registration;
 
 namespace OpenCampus.Identity.Application.Authentication;
 
@@ -6,7 +7,8 @@ namespace OpenCampus.Identity.Application.Authentication;
 
 public static class PasswordRules
 {
-    public const int MinimumLength = 8;
+    /// <summary>Raised from 8 to 12 with self-registration (Increment 7); the full rule set is <see cref="PasswordPolicy"/>.</summary>
+    public const int MinimumLength = 12;
     public const int MaximumLength = 128;
 }
 
@@ -35,8 +37,13 @@ public sealed class ChangePasswordRequestValidator : AbstractValidator<ChangePas
         RuleFor(r => r.CurrentPassword).NotEmpty().MaximumLength(PasswordRules.MaximumLength);
         RuleFor(r => r.NewPassword)
             .NotEmpty()
-            .MinimumLength(PasswordRules.MinimumLength)
-            .MaximumLength(PasswordRules.MaximumLength)
+            .Custom((password, context) =>
+            {
+                foreach (var message in PasswordPolicy.Validate(password))
+                {
+                    context.AddFailure(message);
+                }
+            })
             .NotEqual(r => r.CurrentPassword).WithMessage("The new password must differ from the current password.");
     }
 }

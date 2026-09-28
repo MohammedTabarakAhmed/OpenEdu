@@ -19,7 +19,8 @@ internal static class AuthTestSupport
 {
     public const string DefaultPassword = "Correct-Horse-Battery-Staple-1";
 
-    public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+    /// <summary>Mirrors the host's JSON options: enums travel by name (UserResponse.RegistrationStatus since Increment 7).</summary>
+    public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() } };
 
     public static async Task<User> SeedUserAsync(ApiFactory factory, string? password = null, bool active = true, params string[] roles)
     {

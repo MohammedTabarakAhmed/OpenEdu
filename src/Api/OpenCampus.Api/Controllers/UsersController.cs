@@ -65,6 +65,25 @@ public sealed class UsersController(UserAdministrationService administration) : 
     public async Task<IActionResult> Activate(Guid id, CancellationToken cancellationToken) =>
         (await administration.ActivateAsync(id, cancellationToken)).ToActionResult(this);
 
+    // Self-registration approval (Increment 7). Approving grants the requested role, so it sits under identity.role.assign,
+    // which only the Administrator role holds: no self-registered account gains a privilege without an existing administrator.
+
+    [HttpPost("{id:guid}/registration/approve")]
+    [HasPermission(Permissions.Identity.RoleAssign)]
+    [ProducesResponseType<UserResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<UserResponse>> ApproveRegistration(Guid id, CancellationToken cancellationToken) =>
+        (await administration.ApproveRegistrationAsync(id, ClientContext(), cancellationToken)).ToActionResult(this);
+
+    [HttpPost("{id:guid}/registration/reject")]
+    [HasPermission(Permissions.Identity.RoleAssign)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> RejectRegistration(Guid id, CancellationToken cancellationToken) =>
+        (await administration.RejectRegistrationAsync(id, ClientContext(), cancellationToken)).ToActionResult(this);
+
     [HttpPut("{id:guid}/roles")]
     [HasPermission(Permissions.Identity.RoleAssign)]
     [ProducesResponseType<UserResponse>(StatusCodes.Status200OK)]

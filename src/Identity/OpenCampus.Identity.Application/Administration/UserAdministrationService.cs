@@ -1,5 +1,8 @@
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using OpenCampus.Identity.Application.Abstractions;
+using OpenCampus.Identity.Application.Authorization;
+using OpenCampus.Identity.Application.Registration;
 using OpenCampus.Identity.Application.Security;
 using OpenCampus.Identity.Domain.Audit;
 using OpenCampus.Identity.Domain.Roles;
@@ -33,7 +36,10 @@ public sealed class UserAdministrationService(
     IIdentityUnitOfWork unitOfWork,
     IPasswordHasher passwordHasher,
     ICurrentUser currentUser,
-    TimeProvider clock)
+    TimeProvider clock,
+    RegistrationNotifier notifier,
+    ILearnerRecordProvisioner learnerRecords,
+    ILogger<UserAdministrationService> logger)
 {
     public static readonly IReadOnlyList<string> SortFields = ["userName", "email", "fullNameEn", "createdAtUtc"];
 
@@ -43,7 +49,7 @@ public sealed class UserAdministrationService(
         var descending = query.Sort?.StartsWith('-') == true;
         var sort = query.Sort?.TrimStart('-');
 
-        var result = await users.ListAsync(new UserQuery(page, pageSize, query.Search, query.IsActive, sort, descending), cancellationToken);
+        var result = await users.ListAsync(new UserQuery(page, pageSize, query.Search, query.IsActive, sort, descending, query.RegistrationStatus), cancellationToken);
         var roleNames = await RoleNamesByIdAsync(cancellationToken);
 
         return new PagedResponse<UserResponse>(
@@ -146,8 +152,97 @@ public sealed class UserAdministrationService(
             return Result.Failure(AdministrationErrors.UserNotFound);
         }
 
+        if (user.RegistrationStatus is RegistrationStatus.AwaitingVerification or RegistrationStatus.AwaitingApproval)
+        {
+            return Result.Failure(RegistrationErrors.NotPending with { Message = "A pending registration must be approved, not activated." });
+        }
+
         user.Activate();
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        return Result.Success();
+    }
+
+    // Self-registration approval (Increment 7). Approving *is* a role assignment, hence identity.role.assign at the host.
+
+    /// <summary>Grants the requested role and activates the account; only a verified registrant can be approved.</summary>
+    public async Task<Result<UserResponse>> ApproveRegistrationAsync(Guid id, ClientContext client, CancellationToken cancellationToken)
+    {
+        var user = await users.FindByIdAsync(id, cancellationToken);
+        if (user is null)
+        {
+            return Result.Failure<UserResponse>(AdministrationErrors.UserNotFound);
+        }
+
+        if (user.RegistrationStatus == RegistrationStatus.AwaitingVerification)
+        {
+            return Result.Failure<UserResponse>(RegistrationErrors.NotVerified);
+        }
+
+        if (user.RegistrationStatus != RegistrationStatus.AwaitingApproval)
+        {
+            return Result.Failure<UserResponse>(RegistrationErrors.NotPending);
+        }
+
+        var role = await roles.FindByNameAsync(user.RequestedRole!, cancellationToken);
+        if (role is null)
+        {
+            return Result.Failure<UserResponse>(AdministrationErrors.UnknownRole(user.RequestedRole!));
+        }
+
+        var now = clock.GetUtcNow().UtcDateTime;
+        user.ApproveRegistration(role.Id);
+        audit.Add(RoleAudit(AuditEventTypes.RoleAssigned, user.Id, role.Name, now, client));
+        audit.Add(AuditEvent.Record(
+            AuditEventTypes.RegistrationApproved, nameof(User), user.Id, currentUser.UserId, now, client.IpAddress,
+            JsonSerializer.Serialize(new { requestedRole = user.RequestedRole })));
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        if (role.Name == RoleNames.Learner)
+        {
+            try
+            {
+                await learnerRecords.EnsureAsync(user.Id, cancellationToken);
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                logger.LogError(exception, "Learner record could not be provisioned for user {UserId}; link the account from the Learners screen", user.Id);
+            }
+        }
+
+        await notifier.ApprovedAsync(user, role.Name, cancellationToken);
+        return Result.Success(ToResponse(user, await RoleNamesByIdAsync(cancellationToken)));
+    }
+
+    /// <summary>
+    /// Removes a pending registration outright. A never-activated row has no history to keep (DC-03 concerns
+    /// activated accounts), and deleting it frees the user name and address for a fresh attempt.
+    /// </summary>
+    public async Task<Result> RejectRegistrationAsync(Guid id, ClientContext client, CancellationToken cancellationToken)
+    {
+        var user = await users.FindByIdAsync(id, cancellationToken);
+        if (user is null)
+        {
+            return Result.Failure(AdministrationErrors.UserNotFound);
+        }
+
+        if (user.RegistrationStatus is not (RegistrationStatus.AwaitingVerification or RegistrationStatus.AwaitingApproval))
+        {
+            return Result.Failure(RegistrationErrors.NotPending);
+        }
+
+        var now = clock.GetUtcNow().UtcDateTime;
+        audit.Add(AuditEvent.Record(
+            AuditEventTypes.RegistrationRejected, nameof(User), user.Id, currentUser.UserId, now, client.IpAddress,
+            JsonSerializer.Serialize(new { userName = user.UserName, requestedRole = user.RequestedRole })));
+        var notify = user.EmailVerifiedAtUtc is not null; // Only a verified address is written to.
+        users.Remove(user);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        if (notify)
+        {
+            await notifier.RejectedAsync(user, cancellationToken);
+        }
+
         return Result.Success();
     }
 
@@ -303,7 +398,10 @@ public sealed class UserAdministrationService(
         user.LockedUntilUtc,
         user.Roles.Select(r => roleNames.TryGetValue(r.RoleId, out var name) ? name : r.RoleId.ToString()).OrderBy(n => n).ToList(),
         user.CreatedAtUtc,
-        user.ModifiedAtUtc);
+        user.ModifiedAtUtc,
+        user.RegistrationStatus,
+        user.RequestedRole,
+        user.EmailVerifiedAtUtc);
 
     private static SessionResponse ToResponse(UserSession session) =>
         new(session.Id, session.FamilyId, session.IssuedAtUtc, session.ExpiresAtUtc, session.IpAddress, session.UserAgent);

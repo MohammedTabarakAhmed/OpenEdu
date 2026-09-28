@@ -1,40 +1,60 @@
 {
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+
   "version": 1,
+
   "cli": {
-    "packageManager": "npm"
+    "packageManager": "npm",
+    "analytics": "65483524-b6b6-4003-8d0a-450b1f670d80"
   },
+
   "newProjectRoot": "projects",
+
   "projects": {
     "client": {
       "projectType": "application",
+
       "schematics": {
         "@schematics/angular:component": {
           "style": "scss"
         }
       },
+
       "root": "",
       "sourceRoot": "src",
       "prefix": "app",
+
       "architect": {
         "build": {
           "builder": "@angular/build:application",
+
           "options": {
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
+
             "assets": [
               {
                 "glob": "**/*",
                 "input": "public"
               }
             ],
+
             "styles": [
-              { "input": "node_modules/bootstrap/dist/css/bootstrap.min.css", "bundleName": "bootstrap-ltr", "inject": false },
-              { "input": "node_modules/bootstrap/dist/css/bootstrap.rtl.min.css", "bundleName": "bootstrap-rtl", "inject": false },
+              {
+                "input": "node_modules/bootstrap/dist/css/bootstrap.min.css",
+                "bundleName": "bootstrap-ltr",
+                "inject": false
+              },
+              {
+                "input": "node_modules/bootstrap/dist/css/bootstrap.rtl.min.css",
+                "bundleName": "bootstrap-rtl",
+                "inject": false
+              },
               "src/styles.scss"
             ]
           },
+
           "configurations": {
             "production": {
               "budgets": [
@@ -49,36 +69,52 @@
                   "maximumError": "8kB"
                 }
               ],
+
               "outputHashing": "all",
+
               "optimization": {
                 "scripts": true,
                 "fonts": true,
-                "styles": { "minify": true, "inlineCritical": false }
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                }
               }
             },
+
             "development": {
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
             }
           },
+
           "defaultConfiguration": "production"
         },
+
         "serve": {
           "builder": "@angular/build:dev-server",
+
           "options": {
-            "proxyConfig": "proxy.conf.json"
+            "proxyConfig": "proxy.conf.json",
+            "allowedHosts": [
+              "reversal-chitchat-exceeding.ngrok-free.dev"
+            ]
           },
+
           "configurations": {
             "production": {
               "buildTarget": "client:build:production"
             },
+
             "development": {
               "buildTarget": "client:build:development"
             }
           },
+
           "defaultConfiguration": "development"
         },
+
         "test": {
           "builder": "@angular/build:unit-test"
         }

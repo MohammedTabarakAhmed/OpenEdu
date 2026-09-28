@@ -36,9 +36,27 @@ public interface IUserRepository
     Task<IReadOnlyList<Guid>> SearchIdsAsync(string term, int limit, CancellationToken cancellationToken);
 
     void Add(User user);
+
+    // Self-registration (Increment 7).
+
+    /// <summary>The pending registrant holding this verification token hash, roles included.</summary>
+    Task<User?> FindByVerificationTokenHashAsync(string tokenHash, CancellationToken cancellationToken);
+
+    /// <summary>Case-insensitive match on e-mail only.</summary>
+    Task<User?> FindByEmailAsync(string email, CancellationToken cancellationToken);
+
+    /// <summary>Physical removal — only ever applied to a registration that was never activated (rejected or stale).</summary>
+    void Remove(User user);
 }
 
-public sealed record UserQuery(int Page, int PageSize, string? Search, bool? IsActive, string? Sort, bool Descending);
+public sealed record UserQuery(
+    int Page,
+    int PageSize,
+    string? Search,
+    bool? IsActive,
+    string? Sort,
+    bool Descending,
+    RegistrationStatus? RegistrationStatus = null);
 
 public sealed record PagedResult<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount)
 {

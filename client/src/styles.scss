@@ -274,6 +274,24 @@ body {
   flex: none;
 }
 
+/* ----- Choice cards: a button that reads as a card (the "what is this account for?" step of registration) ----- */
+
+.oc-choice {
+  width: 100%;
+  cursor: pointer;
+  color: inherit;
+  background: var(--bs-card-bg);
+  border: 1px solid var(--oc-line);
+  transition: border-color var(--oc-motion) ease, box-shadow var(--oc-motion) ease;
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--oc-deep);
+    box-shadow: 0 0 0 0.2rem var(--bs-focus-ring-color);
+    outline: none;
+  }
+}
+
 /* ----- Motion: on user actions only, and not at all when the user asks for less ----- */
 
 @media (prefers-reduced-motion: reduce) {

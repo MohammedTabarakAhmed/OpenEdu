@@ -5,6 +5,7 @@ export type SectionStatus = 'Draft' | 'Open' | 'Closed' | 'Cancelled';
 export type EnrolmentStatus = 'Active' | 'AtRisk' | 'Withdrawn' | 'Completed';
 export type LearnerStatus = 'Active' | 'Suspended' | 'Graduated' | 'Withdrawn';
 export type Gender = 'Unspecified' | 'Male' | 'Female';
+export type RegistrationStatus = 'None' | 'AwaitingVerification' | 'AwaitingApproval' | 'Approved';
 
 export const DELIVERY_MODES: DeliveryMode[] = ['InPerson', 'Online', 'Blended'];
 export const SECTION_STATUSES: SectionStatus[] = ['Draft', 'Open', 'Closed', 'Cancelled'];
@@ -186,6 +187,9 @@ export interface User {
   roles: string[];
   createdAtUtc: string;
   modifiedAtUtc: string | null;
+  registrationStatus: RegistrationStatus;
+  requestedRole: string | null;
+  emailVerifiedAtUtc: string | null;
 }
 
 export interface Role {

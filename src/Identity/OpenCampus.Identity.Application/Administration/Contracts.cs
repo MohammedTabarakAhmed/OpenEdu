@@ -1,5 +1,6 @@
 using FluentValidation;
 using OpenCampus.Identity.Application.Authentication;
+using OpenCampus.Identity.Application.Registration;
 using OpenCampus.Identity.Domain.Users;
 
 namespace OpenCampus.Identity.Application.Administration;
@@ -20,7 +21,7 @@ public sealed record UpdateUserRequest(string Email, string FullNameEn, string F
 public sealed record AssignRolesRequest(IReadOnlyList<string> Roles);
 
 /// <summary>Collection parameters (API-03). Sort accepts userName, email, fullNameEn, createdAtUtc; prefix with '-' for descending.</summary>
-public sealed record UserListQuery(int? Page, int? PageSize, string? Search, bool? IsActive, string? Sort);
+public sealed record UserListQuery(int? Page, int? PageSize, string? Search, bool? IsActive, string? Sort, RegistrationStatus? RegistrationStatus = null);
 
 public sealed record AuditListQuery(int? Page, int? PageSize, Guid? UserId, string? EventType, DateTime? FromUtc, DateTime? ToUtc);
 
@@ -37,7 +38,10 @@ public sealed record UserResponse(
     DateTime? LockedUntilUtc,
     IReadOnlyList<string> Roles,
     DateTime CreatedAtUtc,
-    DateTime? ModifiedAtUtc);
+    DateTime? ModifiedAtUtc,
+    RegistrationStatus RegistrationStatus,
+    string? RequestedRole,
+    DateTime? EmailVerifiedAtUtc);
 
 public sealed record RoleResponse(Guid Id, string Name, string Description, IReadOnlyList<string> Permissions);
 
@@ -67,7 +71,13 @@ public sealed class CreateUserRequestValidator : AbstractValidator<CreateUserReq
     {
         RuleFor(r => r.UserName).NotEmpty().MaximumLength(User.UserNameMaxLength).Matches("^[A-Za-z0-9._-]+$");
         RuleFor(r => r.Email).NotEmpty().MaximumLength(User.EmailMaxLength).EmailAddress();
-        RuleFor(r => r.Password).NotEmpty().MinimumLength(PasswordRules.MinimumLength).MaximumLength(PasswordRules.MaximumLength);
+        RuleFor(r => r.Password).NotEmpty().Custom((password, context) =>
+        {
+            foreach (var message in PasswordPolicy.Validate(password, context.InstanceToValidate.UserName, context.InstanceToValidate.Email))
+            {
+                context.AddFailure(message);
+            }
+        });
         RuleFor(r => r.FullNameEn).NotEmpty().MaximumLength(User.FullNameMaxLength);
         RuleFor(r => r.FullNameAr).NotEmpty().MaximumLength(User.FullNameMaxLength);
         RuleFor(r => r.Roles).NotNull();
@@ -101,6 +111,7 @@ public sealed class UserListQueryValidator : AbstractValidator<UserListQuery>
         RuleFor(q => q.Page).GreaterThanOrEqualTo(1).When(q => q.Page.HasValue);
         RuleFor(q => q.PageSize).InclusiveBetween(1, SharedKernel.Paging.MaxPageSize).When(q => q.PageSize.HasValue);
         RuleFor(q => q.Search).MaximumLength(100);
+        RuleFor(q => q.RegistrationStatus).IsInEnum().When(q => q.RegistrationStatus.HasValue);
         RuleFor(q => q.Sort)
             .Must(s => s is null || UserAdministrationService.SortFields.Contains(s.TrimStart('-'), StringComparer.OrdinalIgnoreCase))
             .WithMessage("Sort must be one of: userName, email, fullNameEn, createdAtUtc (prefix '-' for descending).");

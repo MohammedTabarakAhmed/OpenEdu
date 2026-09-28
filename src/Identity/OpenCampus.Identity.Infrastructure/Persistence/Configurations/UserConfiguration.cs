@@ -25,8 +25,24 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.FailedLoginCount).IsRequired();
         builder.Property(u => u.LockedUntilUtc);
 
+        // Self-registration state (Increment 7). Enums are stored by name (13.6).
+        builder.Property(u => u.RegistrationStatus)
+            .HasConversion<string>()
+            .HasMaxLength(32)
+            .HasDefaultValue(RegistrationStatus.None)
+            .IsRequired();
+        builder.Property(u => u.RequestedRole).HasMaxLength(User.RoleNameMaxLength);
+        builder.Property(u => u.EmailVerifiedAtUtc);
+        builder.Property(u => u.VerificationTokenHash).HasMaxLength(User.VerificationTokenHashMaxLength);
+        builder.Property(u => u.VerificationTokenIssuedAtUtc);
+        builder.Property(u => u.VerificationTokenExpiresAtUtc);
+
         builder.HasIndex(u => u.Email).IsUnique();
         builder.HasIndex(u => u.UserName).IsUnique();
+        builder.HasIndex(u => u.VerificationTokenHash)
+            .IsUnique()
+            .HasFilter("[VerificationTokenHash] IS NOT NULL");
+        builder.HasIndex(u => u.RegistrationStatus);
 
         builder.HasMany(u => u.Roles)
             .WithOne()

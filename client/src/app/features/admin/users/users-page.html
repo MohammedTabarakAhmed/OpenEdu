@@ -1,6 +1,13 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
   <h2 class="h5 m-0">{{ 'users.title' | t }}</h2>
-  <div class="d-flex gap-2">
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+    <label class="visually-hidden" for="user-registration-filter">{{ 'users.registration.filter' | t }}</label>
+    <select class="form-select form-select-sm w-auto" id="user-registration-filter" (change)="onRegistrationFilter($any($event.target).value)" data-testid="user-registration-filter">
+      <option value="">{{ 'users.registration.all' | t }}</option>
+      @for (status of registrationFilters; track status) {
+        <option [value]="status">{{ 'users.registration.' + status | t }}</option>
+      }
+    </select>
     <app-search-box id="user-search" (search)="onSearch($event)" />
     @if (session.hasPermission('identity.user.write')) {
       <button class="btn btn-primary btn-sm" type="button" (click)="startCreate()" data-testid="user-new">{{ 'users.new' | t }}</button>
@@ -123,6 +130,11 @@
               <span class="badge" [class.text-bg-success]="user.isActive" [class.text-bg-secondary]="!user.isActive">{{ (user.isActive ? 'common.active' : 'common.inactive') | t }}</span>
               @if (user.lockedUntilUtc) { <span class="badge text-bg-warning">{{ 'users.locked' | t }}</span> }
               @if (user.mfaEnabled) { <span class="badge text-bg-info">{{ 'users.mfa' | t }}</span> }
+              @if (user.registrationStatus === 'AwaitingApproval') {
+                <span class="badge text-bg-warning" data-testid="user-awaiting-approval">{{ 'users.registration.AwaitingApproval' | t }} · {{ user.requestedRole }}</span>
+              } @else if (user.registrationStatus === 'AwaitingVerification') {
+                <span class="badge text-bg-secondary" data-testid="user-awaiting-verification">{{ 'users.registration.AwaitingVerification' | t }} · {{ user.requestedRole }}</span>
+              }
             </td>
             <td class="text-end text-nowrap">
               @if (session.hasPermission('identity.user.write')) {
@@ -131,7 +143,14 @@
               @if (session.hasPermission('identity.session.revoke')) {
                 <button class="btn btn-link btn-sm" type="button" (click)="showSessions(user)">{{ 'users.sessions' | t }}</button>
               }
-              @if (session.hasPermission('identity.user.deactivate')) {
+              @if (isPending(user)) {
+                @if (session.hasPermission('identity.role.assign')) {
+                  @if (user.registrationStatus === 'AwaitingApproval') {
+                    <button class="btn btn-link btn-sm text-success" type="button" (click)="approve(user)" data-testid="user-approve">{{ 'users.approve' | t }}</button>
+                  }
+                  <button class="btn btn-link btn-sm text-danger" type="button" (click)="reject(user)" data-testid="user-reject">{{ 'users.reject' | t }}</button>
+                }
+              } @else if (session.hasPermission('identity.user.deactivate')) {
                 <button class="btn btn-link btn-sm" [class.text-danger]="user.isActive" type="button" (click)="toggleActive(user)">
                   {{ (user.isActive ? 'users.deactivate' : 'users.activate') | t }}
                 </button>

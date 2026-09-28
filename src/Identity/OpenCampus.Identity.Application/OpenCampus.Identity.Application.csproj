@@ -11,4 +11,9 @@
     <ProjectReference Include="..\OpenCampus.Identity.Domain\OpenCampus.Identity.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Increment 7: the offline common-password list (SecLists, MIT; see DEPENDENCIES.md). -->
+    <EmbeddedResource Include="Registration\common-passwords.txt" />
+  </ItemGroup>
+
 </Project>

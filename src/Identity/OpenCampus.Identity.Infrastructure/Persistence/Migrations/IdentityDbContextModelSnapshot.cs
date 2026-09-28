@@ -231,6 +231,9 @@ namespace OpenCampus.Identity.Infrastructure.Persistence.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<DateTime?>("EmailVerifiedAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("FailedLoginCount")
                         .HasColumnType("int");
 
@@ -271,18 +274,45 @@ namespace OpenCampus.Identity.Infrastructure.Persistence.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("nvarchar(512)");
 
+                    b.Property<string>("RegistrationStatus")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)")
+                        .HasDefaultValue("None");
+
+                    b.Property<string>("RequestedRole")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
                     b.Property<string>("UserName")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime?>("VerificationTokenExpiresAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("VerificationTokenHash")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime?>("VerificationTokenIssuedAtUtc")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
                         .IsUnique();
 
+                    b.HasIndex("RegistrationStatus");
+
                     b.HasIndex("UserName")
                         .IsUnique();
+
+                    b.HasIndex("VerificationTokenHash")
+                        .IsUnique()
+                        .HasFilter("[VerificationTokenHash] IS NOT NULL");
 
                     b.ToTable("Users", "identity");
                 });

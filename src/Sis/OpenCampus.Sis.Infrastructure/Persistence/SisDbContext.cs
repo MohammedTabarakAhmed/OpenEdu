@@ -37,6 +37,8 @@ public sealed class SisDbContext(DbContextOptions<SisDbContext> options, TimePro
     {
         modelBuilder.HasDefaultSchema(Schema);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(SisDbContext).Assembly);
+        // Learner numbers for self-registered learners (Increment 7); demo data uses L2026001..L2026040.
+        modelBuilder.HasSequence<int>("LearnerNumberSequence", schema: Schema).StartsAt(1000).IncrementsBy(1);
         ApplyLogicalDeletionFilter(modelBuilder);
     }
 

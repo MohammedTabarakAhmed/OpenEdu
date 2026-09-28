@@ -30,6 +30,9 @@
           {{ 'login.submit' | t }}
         </button>
       </form>
+      <p class="small text-secondary text-center mt-3 mb-0">
+        {{ 'login.register.cta' | t }} <a routerLink="/register" data-testid="login-register">{{ 'register.title' | t }}</a>
+      </p>
     } @else {
       <form (ngSubmit)="submitCode()" novalidate data-testid="mfa-form">
         <h2 class="h6">{{ 'login.mfa.title' | t }}</h2>

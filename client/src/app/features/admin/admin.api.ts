@@ -239,6 +239,15 @@ export class UsersApi {
     return this.http.post<void>(`/api/v1/users/${id}/activate`, null);
   }
 
+  // Self-registration (Increment 7): approval grants the requested role; rejection removes the pending row.
+  approveRegistration(id: string): Observable<User> {
+    return this.http.post<User>(`/api/v1/users/${id}/registration/approve`, null);
+  }
+
+  rejectRegistration(id: string): Observable<void> {
+    return this.http.post<void>(`/api/v1/users/${id}/registration/reject`, null);
+  }
+
   roles(): Observable<Role[]> {
     return this.http.get<Role[]>('/api/v1/roles');
   }
