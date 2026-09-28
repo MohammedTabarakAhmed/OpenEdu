@@ -1,8 +1,6 @@
 # OpenCampus
 
-Academic eLearning Platform for Horizon Training Institute, implemented against
-`docs/opencampus-e-learning-design-v1.docx` (HTI-OC-SDD v1.0). Section references
-below are to that document.
+Academic eLearning Platform for Horizon Training Institute.
 
 ## Prerequisites
 
@@ -274,12 +272,11 @@ The endpoints below are the only ones marked `[AllowAnonymous]`; the first three
 Increment 1 — Foundation: complete. Increment 2 — Identity: complete. Increment 3 — Academic structure: complete.
 Increment 4 — Content delivery: complete (section 13.4 entities; content management and resource handling; section 16.5
 in full; SEC-12 resource-level authorisation for instructors and learners over the LMS→SIS contract; BR-15; instructor
-and learner interfaces; visual identity). See `ACCEPTANCE.md` for the step log and `DEPENDENCIES.md` for the dependency
-register (DEL-04).
+and learner interfaces; visual identity).
 
 Carried forward to later increments: BR-04 and the assessment SEC-12 cases (Increment 5), announcements (mandatory scope
 not assigned to an increment by section 19; schema delivered), 18.4 reference-data caching (with the first cacheable read
 path — now delivered as decision 46). Increment 6 — Certification and completion: complete (BR-10/BR-11, certificate issuance and PDF rendering,
 anonymous verification, external adapters EXT-01..05 and reporting, localisation per 17.4 in full, transport headers per
-16.6, and the security test report `SECURITY.md` per 16.8 / DEL-06). The DEL-07 browser walkthrough in both languages
+16.6). The DEL-07 browser walkthrough in both languages
 is the remaining manual pass.
